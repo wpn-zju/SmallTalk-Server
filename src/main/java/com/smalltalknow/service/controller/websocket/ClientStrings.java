@@ -1,0 +1,67 @@
+package com.smalltalknow.service.controller.websocket;
+
+public final class ClientStrings {
+    public static final String API_USER_SIGN_UP = "/system/user_sign_up";
+    public static final String API_USER_SIGN_UP_PASSCODE_REQUEST = "/system/user_sign_up_passcode_request";
+    public static final String API_USER_RECOVER_PASSWORD = "/system/user_recover_password";
+    public static final String API_USER_RECOVER_PASSWORD_PASSCODE_REQUEST = "/system/user_recover_password_passcode_request";
+    public static final String API_USER_SIGN_IN = "/system/user_sign_in";
+    public static final String API_USER_SESSION_SIGN_IN = "/system/user_session_sign_in";
+    public static final String API_USER_SESSION_SIGN_OUT = "/system/user_session_sign_out";
+    public static final String API_USER_MODIFY_NAME = "/system/user_modify_name";
+    public static final String API_USER_MODIFY_PASSWORD = "/system/user_modify_password";
+    public static final String API_USER_SYNC = "/system/user_sync";
+    public static final String API_CHAT_MESSAGE_FORWARD = "/chat/message_forward";
+    public static final String API_CHAT_MESSAGE_FORWARD_GROUP = "/chat/message_forward_group";
+    public static final String API_CHAT_CONTACT_ADD_REQUEST = "/chat/contact_add_request";
+    public static final String API_CHAT_CONTACT_ADD_CONFIRM = "/chat/contact_add_confirm";
+    public static final String API_CHAT_CONTACT_ADD_REFUSE = "/chat/contact_add_refuse";
+    public static final String API_CHAT_GROUP_CREATE_REQUEST = "/chat/group_create_request";
+    public static final String API_CHAT_GROUP_MODIFY_NAME = "/chat/group_modify_name";
+    public static final String API_CHAT_GROUP_ADD_REQUEST = "/chat/group_add_request";
+    public static final String API_CHAT_GROUP_ADD_CONFIRM = "/chat/group_add_confirm";
+    public static final String API_CHAT_GROUP_ADD_REFUSE = "/chat/group_add_refuse";
+    public static final String API_CHAT_WEBRTC_CALL = "/chat/webrtc_call";
+
+    public static final String TIMESTAMP = "timestamp";
+    public static final String USER_SIGN_UP_USER_EMAIL = "user_email";
+    public static final String USER_SIGN_UP_USER_PASSWORD = "user_password";
+    public static final String USER_SIGN_UP_PASSCODE = "passcode";
+    public static final String USER_SIGN_UP_PASSCODE_REQUEST_USER_EMAIL = "user_email";
+    public static final String USER_RECOVER_PASSWORD_USER_EMAIL = "user_email";
+    public static final String USER_RECOVER_PASSWORD_USER_PASSWORD = "user_password";
+    public static final String USER_RECOVER_PASSWORD_PASSCODE = "passcode";
+    public static final String USER_RECOVER_PASSWORD_PASSCODE_REQUEST_USER_EMAIL = "user_email";
+    public static final String USER_SIGN_IN_USER_EMAIL = "user_email";
+    public static final String USER_SIGN_IN_USER_PASSWORD = "user_password";
+    public static final String USER_SESSION_SIGN_IN_SESSION_TOKEN = "session_token";
+    public static final String USER_MODIFY_USER_NAME_NEW_USER_NAME = "new_user_name";
+    public static final String USER_MODIFY_USER_PASSWORD_NEW_USER_PASSWORD = "new_user_password";
+    public static final String CHAT_MESSAGE_FORWARD_SENDER = "sender";
+    public static final String CHAT_MESSAGE_FORWARD_RECEIVER = "receiver";
+    public static final String CHAT_MESSAGE_FORWARD_CONTENT = "content";
+    public static final String CHAT_MESSAGE_FORWARD_CONTENT_TYPE = "content_type";
+    public static final String CHAT_MESSAGE_FORWARD_GROUP_SENDER = "sender";
+    public static final String CHAT_MESSAGE_FORWARD_GROUP_RECEIVER = "receiver";
+    public static final String CHAT_MESSAGE_FORWARD_GROUP_CONTENT = "content";
+    public static final String CHAT_MESSAGE_FORWARD_GROUP_CONTENT_TYPE = "content_type";
+    public static final String CHAT_CONTACT_ADD_REQUEST_CONTACT_EMAIL = "contact_email";
+    public static final String CHAT_CONTACT_ADD_CONFIRM_REQUEST_ID = "request_id";
+    public static final String CHAT_CONTACT_ADD_REFUSE_REQUEST_ID = "request_id";
+    public static final String CHAT_GROUP_CREATE_REQUEST_GROUP_NAME = "group_name";
+    public static final String CHAT_GROUP_MODIFY_NAME_GROUP_ID = "group_id";
+    public static final String CHAT_GROUP_MODIFY_NAME_NEW_GROUP_NAME = "new_group_name";
+    public static final String CHAT_GROUP_ADD_REQUEST_GROUP_ID = "group_id";
+    public static final String CHAT_GROUP_ADD_CONFIRM_REQUEST_ID = "request_id";
+    public static final String CHAT_GROUP_ADD_REFUSE_REQUEST_ID = "request_id";
+    public static final String CHAT_WEBRTC_CALL_SENDER = "sender";
+    public static final String CHAT_WEBRTC_CALL_RECEIVER = "receiver";
+    public static final String CHAT_WEBRTC_CALL_WEBRTC_COMMAND = "webrtc_command";
+    public static final String CHAT_WEBRTC_CALL_WEBRTC_SESSION_DESCRIPTION = "webrtc_description";
+
+    public static final String CHAT_CONTENT_TYPE_TEXT = "text";
+    public static final String CHAT_CONTENT_TYPE_IMAGE = "image";
+    public static final String CHAT_CONTENT_TYPE_AUDIO = "audio";
+    public static final String CHAT_CONTENT_TYPE_VIDEO = "video";
+    public static final String CHAT_CONTENT_TYPE_FILE = "file";
+}
