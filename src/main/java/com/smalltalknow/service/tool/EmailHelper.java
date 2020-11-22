@@ -19,7 +19,7 @@ public class EmailHelper {
 
     private static void sendEmail(String to, String subject, String content) throws UnirestException {
         HttpResponse<JsonNode> request = Unirest.post("https://api.mailgun.net/v3/" + DOMAIN + "/messages")
-                .basicAuth("api", Credentials.MAILGUN_API_KEY)
+                .basicAuth("api", Credentials.MAIL_API_KEY)
                 .queryString("from", "no-reply<no-reply@smalltalknow.com>")
                 .queryString("to", to)
                 .queryString("subject", subject)

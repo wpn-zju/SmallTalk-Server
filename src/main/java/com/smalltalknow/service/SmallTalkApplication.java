@@ -1,7 +1,5 @@
 package com.smalltalknow.service;
 
-import com.mashape.unirest.http.exceptions.UnirestException;
-import com.smalltalknow.service.tool.EmailHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
@@ -25,8 +23,7 @@ import java.util.Date;
 public class SmallTalkApplication {
 	private static final Logger logger = LoggerFactory.getLogger(SmallTalkApplication.class);
 
-	public static void main(String[] args) throws UnirestException {
-		EmailHelper.sendNewUserNotification("zjuwpn@gmail.com");
+	public static void main(String[] args) {
 		SpringApplication.run(SmallTalkApplication.class, args);
 	}
 
