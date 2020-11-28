@@ -9,7 +9,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @AllArgsConstructor
-public class UserSignUpPasscodeRequestMessage {
-    @JsonProperty(ClientConstant.USER_SIGN_UP_PASSCODE_REQUEST_USER_EMAIL)
-    private final String userEmail;
+public class LoadContactMessage {
+    @JsonProperty(ClientConstant.LOAD_CONTACT_CONTACT_ID)
+    private final int contactId;
 }

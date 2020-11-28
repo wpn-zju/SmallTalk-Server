@@ -1,6 +1,6 @@
 package com.smalltalknow.service.controller.websocket;
 
-public final class ClientStrings {
+public final class ClientConstant {
     public static final String API_USER_SIGN_UP = "/system/user_sign_up";
     public static final String API_USER_SIGN_UP_PASSCODE_REQUEST = "/system/user_sign_up_passcode_request";
     public static final String API_USER_RECOVER_PASSWORD = "/system/user_recover_password";
@@ -10,7 +10,10 @@ public final class ClientStrings {
     public static final String API_USER_SESSION_SIGN_OUT = "/system/user_session_sign_out";
     public static final String API_USER_MODIFY_NAME = "/system/user_modify_name";
     public static final String API_USER_MODIFY_PASSWORD = "/system/user_modify_password";
-    public static final String API_USER_SYNC = "/system/user_sync";
+    public static final String API_LOAD_USER = "/system/load_user";
+    public static final String API_LOAD_CONTACT = "/system/load_contact";
+    public static final String API_LOAD_GROUP = "/system/load_group";
+    public static final String API_LOAD_REQUEST = "/system/load_request";
     public static final String API_CHAT_MESSAGE_FORWARD = "/chat/message_forward";
     public static final String API_CHAT_MESSAGE_FORWARD_GROUP = "/chat/message_forward_group";
     public static final String API_CHAT_CONTACT_ADD_REQUEST = "/chat/contact_add_request";
@@ -37,6 +40,9 @@ public final class ClientStrings {
     public static final String USER_SESSION_SIGN_IN_SESSION_TOKEN = "session_token";
     public static final String USER_MODIFY_USER_NAME_NEW_USER_NAME = "new_user_name";
     public static final String USER_MODIFY_USER_PASSWORD_NEW_USER_PASSWORD = "new_user_password";
+    public static final String LOAD_CONTACT_CONTACT_ID = "contact_id";
+    public static final String LOAD_GROUP_GROUP_ID = "group_id";
+    public static final String LOAD_REQUEST_REQUEST_ID = "request_id";
     public static final String CHAT_MESSAGE_FORWARD_SENDER = "sender";
     public static final String CHAT_MESSAGE_FORWARD_RECEIVER = "receiver";
     public static final String CHAT_MESSAGE_FORWARD_CONTENT = "content";

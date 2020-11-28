@@ -28,7 +28,7 @@ public class SmallTalkApplication {
 	}
 
 	@Bean
-	public ServerEndpointExporter serverEndpointExporter(){
+	public ServerEndpointExporter serverEndpointExporter() {
 		return new ServerEndpointExporter();
 	}
 

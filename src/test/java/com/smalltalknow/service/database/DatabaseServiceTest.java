@@ -1,8 +1,8 @@
 package com.smalltalknow.service.database;
 
 import com.smalltalknow.service.controller.enums.EnumRequestStatus;
-import com.smalltalknow.service.controller.websocket.ClientStrings;
-import com.smalltalknow.service.controller.websocket.RequestStrings;
+import com.smalltalknow.service.controller.websocket.ClientConstant;
+import com.smalltalknow.service.controller.websocket.RequestConstant;
 import com.smalltalknow.service.database.exception.*;
 import com.smalltalknow.service.database.model.GroupInfo;
 import com.smalltalknow.service.database.model.RequestInfo;
@@ -204,10 +204,10 @@ public class DatabaseServiceTest {
         RequestInfo requestInfo = DatabaseService.getRequestInfo(requestId1);
         assertEquals(requestInfo.getRequestId(), requestId1);
         Assert.assertEquals(requestInfo.getRequestStatus(), EnumRequestStatus.REQUEST_STATUS_PENDING.toString());
-        Assert.assertEquals(requestInfo.getRequestType(), RequestStrings.REQUEST_CONTACT_ADD);
+        Assert.assertEquals(requestInfo.getRequestType(), RequestConstant.REQUEST_CONTACT_ADD);
         JsonObject metadata = requestInfo.getRequestMetadata();
-        assertEquals(metadata.get(RequestStrings.REQUEST_CONTACT_ADD_SENDER).getInt(), userId5);
-        assertEquals(metadata.get(RequestStrings.REQUEST_CONTACT_ADD_RECEIVER).getInt(), userId6);
+        assertEquals(metadata.get(RequestConstant.REQUEST_CONTACT_ADD_SENDER).getInt(), userId5);
+        assertEquals(metadata.get(RequestConstant.REQUEST_CONTACT_ADD_RECEIVER).getInt(), userId6);
         List<Integer> visibleUserList = requestInfo.getVisibleUserList();
         assertEquals(visibleUserList.size(), 2);
         assertTrue(visibleUserList.contains(userId5));
@@ -218,8 +218,8 @@ public class DatabaseServiceTest {
     public void testNewContactConfirm() throws RequestNotExistsException {
         RequestInfo requestInfo = DatabaseService.getRequestInfo(requestId2);
         JsonObject metadata = requestInfo.getRequestMetadata();
-        int sender = metadata.get(RequestStrings.REQUEST_CONTACT_ADD_SENDER).getInt();
-        int receiver = metadata.get(RequestStrings.REQUEST_CONTACT_ADD_RECEIVER).getInt();
+        int sender = metadata.get(RequestConstant.REQUEST_CONTACT_ADD_SENDER).getInt();
+        int receiver = metadata.get(RequestConstant.REQUEST_CONTACT_ADD_RECEIVER).getInt();
         assertFalse(DatabaseService.isFriend(sender, receiver));
         DatabaseService.newContactConfirm(requestId2, sender, receiver);
         requestInfo = DatabaseService.getRequestInfo(requestId2);
@@ -231,8 +231,8 @@ public class DatabaseServiceTest {
     public void testNewContactRefuse() throws RequestNotExistsException {
         RequestInfo requestInfo = DatabaseService.getRequestInfo(requestId3);
         JsonObject metadata = requestInfo.getRequestMetadata();
-        int sender = metadata.get(RequestStrings.REQUEST_CONTACT_ADD_SENDER).getInt();
-        int receiver = metadata.get(RequestStrings.REQUEST_CONTACT_ADD_RECEIVER).getInt();
+        int sender = metadata.get(RequestConstant.REQUEST_CONTACT_ADD_SENDER).getInt();
+        int receiver = metadata.get(RequestConstant.REQUEST_CONTACT_ADD_RECEIVER).getInt();
         assertFalse(DatabaseService.isFriend(sender, receiver));
         DatabaseService.newContactRefuse(requestId2);
         requestInfo = DatabaseService.getRequestInfo(requestId2);
@@ -247,11 +247,11 @@ public class DatabaseServiceTest {
         RequestInfo requestInfo = DatabaseService.getRequestInfo(requestId4);
         assertEquals(requestInfo.getRequestId(), requestId4);
         assertEquals(requestInfo.getRequestStatus(), EnumRequestStatus.REQUEST_STATUS_PENDING.toString());
-        assertEquals(requestInfo.getRequestType(), RequestStrings.REQUEST_GROUP_ADD);
+        assertEquals(requestInfo.getRequestType(), RequestConstant.REQUEST_GROUP_ADD);
         JsonObject metadata = requestInfo.getRequestMetadata();
-        assertEquals(metadata.get(RequestStrings.REQUEST_GROUP_ADD_SENDER).getInt(), userId4);
-        assertEquals(metadata.get(RequestStrings.REQUEST_GROUP_ADD_RECEIVER).getInt(), groupInfo.getGroupHostId());
-        assertEquals(metadata.get(RequestStrings.REQUEST_GROUP_ADD_GROUP_ID).getInt(), groupInfo.getGroupId());
+        assertEquals(metadata.get(RequestConstant.REQUEST_GROUP_ADD_SENDER).getInt(), userId4);
+        assertEquals(metadata.get(RequestConstant.REQUEST_GROUP_ADD_RECEIVER).getInt(), groupInfo.getGroupHostId());
+        assertEquals(metadata.get(RequestConstant.REQUEST_GROUP_ADD_GROUP_ID).getInt(), groupInfo.getGroupId());
         List<Integer> visibleUserList = requestInfo.getVisibleUserList();
         assertEquals(visibleUserList.size(), 2);
         assertTrue(visibleUserList.contains(userId4));
@@ -262,8 +262,8 @@ public class DatabaseServiceTest {
     public void testNewMemberConfirm() throws RequestNotExistsException {
         RequestInfo requestInfo = DatabaseService.getRequestInfo(requestId5);
         JsonObject metadata = requestInfo.getRequestMetadata();
-        int sender = metadata.get(RequestStrings.REQUEST_GROUP_ADD_SENDER).getInt();
-        int groupId = metadata.get(RequestStrings.REQUEST_GROUP_ADD_GROUP_ID).getInt();
+        int sender = metadata.get(RequestConstant.REQUEST_GROUP_ADD_SENDER).getInt();
+        int groupId = metadata.get(RequestConstant.REQUEST_GROUP_ADD_GROUP_ID).getInt();
         assertFalse(DatabaseService.isMember(groupId, sender));
         DatabaseService.newMemberConfirm(requestId5, sender, groupId);
         requestInfo = DatabaseService.getRequestInfo(requestId5);
@@ -275,8 +275,8 @@ public class DatabaseServiceTest {
     public void testNewMemberRefuse() throws RequestNotExistsException {
         RequestInfo requestInfo = DatabaseService.getRequestInfo(requestId6);
         JsonObject metadata = requestInfo.getRequestMetadata();
-        int sender = metadata.get(RequestStrings.REQUEST_GROUP_ADD_SENDER).getInt();
-        int groupId = metadata.get(RequestStrings.REQUEST_GROUP_ADD_GROUP_ID).getInt();
+        int sender = metadata.get(RequestConstant.REQUEST_GROUP_ADD_SENDER).getInt();
+        int groupId = metadata.get(RequestConstant.REQUEST_GROUP_ADD_GROUP_ID).getInt();
         assertFalse(DatabaseService.isMember(groupId, sender));
         DatabaseService.newMemberRefuse(requestId5);
         requestInfo = DatabaseService.getRequestInfo(requestId5);
@@ -295,20 +295,20 @@ public class DatabaseServiceTest {
                         "\"%s\":\"%s\", " +
                         "\"%s\":\"%s\", " +
                         "\"%s\":\"%s\"}",
-                ClientStrings.CHAT_MESSAGE_FORWARD_SENDER, userId1,
-                ClientStrings.CHAT_MESSAGE_FORWARD_RECEIVER, userId2,
-                ClientStrings.CHAT_MESSAGE_FORWARD_CONTENT, sampleMessageContent,
-                ClientStrings.CHAT_MESSAGE_FORWARD_CONTENT_TYPE, ClientStrings.CHAT_CONTENT_TYPE_TEXT,
-                ClientStrings.TIMESTAMP, timestamp);
+                ClientConstant.CHAT_MESSAGE_FORWARD_SENDER, userId1,
+                ClientConstant.CHAT_MESSAGE_FORWARD_RECEIVER, userId2,
+                ClientConstant.CHAT_MESSAGE_FORWARD_CONTENT, sampleMessageContent,
+                ClientConstant.CHAT_MESSAGE_FORWARD_CONTENT_TYPE, ClientConstant.CHAT_CONTENT_TYPE_TEXT,
+                ClientConstant.TIMESTAMP, timestamp);
         DatabaseService.pushOfflineMessage(userId1, sampleMessage);
         messageList = DatabaseService.popOfflineMessageAsList(userId1);
         assertEquals(messageList.size(), 1);
         JsonObject message = messageList.get(0);
-        assertEquals(message.get(ClientStrings.CHAT_MESSAGE_FORWARD_SENDER).getInt(), userId1);
-        assertEquals(message.get(ClientStrings.CHAT_MESSAGE_FORWARD_RECEIVER).getInt(), userId2);
-        assertEquals(message.get(ClientStrings.CHAT_MESSAGE_FORWARD_CONTENT).getString(), sampleMessageContent);
-        assertEquals(message.get(ClientStrings.CHAT_MESSAGE_FORWARD_CONTENT_TYPE).getString(), ClientStrings.CHAT_CONTENT_TYPE_TEXT);
-        assertEquals(message.get(ClientStrings.TIMESTAMP).getString(), timestamp);
+        assertEquals(message.get(ClientConstant.CHAT_MESSAGE_FORWARD_SENDER).getInt(), userId1);
+        assertEquals(message.get(ClientConstant.CHAT_MESSAGE_FORWARD_RECEIVER).getInt(), userId2);
+        assertEquals(message.get(ClientConstant.CHAT_MESSAGE_FORWARD_CONTENT).getString(), sampleMessageContent);
+        assertEquals(message.get(ClientConstant.CHAT_MESSAGE_FORWARD_CONTENT_TYPE).getString(), ClientConstant.CHAT_CONTENT_TYPE_TEXT);
+        assertEquals(message.get(ClientConstant.TIMESTAMP).getString(), timestamp);
         messageList = DatabaseService.popOfflineMessageAsList(userId1);
         assertEquals(messageList.size(), 0);
     }

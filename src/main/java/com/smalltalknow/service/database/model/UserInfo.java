@@ -9,6 +9,7 @@ import java.util.List;
 @Builder
 public final class UserInfo {
     private final int userId;
+    private final String session;
     private final String userEmail;
     private final String userName;
     private final String userPassword;

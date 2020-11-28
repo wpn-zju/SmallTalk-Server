@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+		 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
@@ -8,7 +9,6 @@
 		<artifactId>spring-boot-starter-parent</artifactId>
 		<version>2.2.5.RELEASE</version>
 		<relativePath/>
-		<!-- lookup parent from repository -->
 	</parent>
 
 	<groupId>com.smalltalknow</groupId>
@@ -77,38 +77,11 @@
 		</dependency>
 
 		<dependency>
-			<groupId>software.amazon.awssdk</groupId>
-			<artifactId>ec2</artifactId>
-		</dependency>
-
-		<dependency>
-			<groupId>software.amazon.awssdk</groupId>
-			<artifactId>s3</artifactId>
-		</dependency>
-
-		<dependency>
-			<groupId>software.amazon.awssdk</groupId>
-			<artifactId>sesv2</artifactId>
-		</dependency>
-
-		<dependency>
 			<groupId>com.mashape.unirest</groupId>
 			<artifactId>unirest-java</artifactId>
 			<version>1.4.9</version>
 		</dependency>
 	</dependencies>
-
-	<dependencyManagement>
-		<dependencies>
-			<dependency>
-				<groupId>software.amazon.awssdk</groupId>
-				<artifactId>bom</artifactId>
-				<version>2.15.21</version>
-				<type>pom</type>
-				<scope>import</scope>
-			</dependency>
-		</dependencies>
-	</dependencyManagement>
 
 	<build>
 		<plugins>

@@ -4,7 +4,7 @@ import com.smalltalknow.service.controller.enums.EnumMessageStatus;
 import com.smalltalknow.service.controller.enums.EnumPasscodeStatus;
 import com.smalltalknow.service.controller.enums.EnumRequestStatus;
 import com.smalltalknow.service.controller.enums.EnumSessionStatus;
-import com.smalltalknow.service.controller.websocket.RequestStrings;
+import com.smalltalknow.service.controller.websocket.RequestConstant;
 import com.smalltalknow.service.database.exception.*;
 import com.smalltalknow.service.database.model.GroupInfo;
 import com.smalltalknow.service.database.model.RequestInfo;
@@ -242,7 +242,7 @@ public class DatabaseService {
     }
 
     private static final String searchUser = "select " +
-            "user_id, user_email, user_name, user_password, contact_list, group_list, request_list, offline_message_list " +
+            "user_id, user_email, user_name, user_password, contact_list, group_list, request_list, offline_message_list, last_session " +
             "from account where user_id = ?";
     public static UserInfo getUserInfo(int userId) throws UserNotExistsException, DataAccessException {
         try (Connection con = DriverManager.getConnection(url, user, password);
@@ -260,7 +260,8 @@ public class DatabaseService {
                             .groupList(JsonObject.create(rs.getString(6)).getList()
                                     .stream().map(JsonObject::getInt).collect(Collectors.toList()))
                             .requestList(JsonObject.create(rs.getString(7)).getList()
-                                    .stream().map(JsonObject::getInt).collect(Collectors.toList())).build();
+                                    .stream().map(JsonObject::getInt).collect(Collectors.toList()))
+                            .session(rs.getString(9)).build();
                 } else {
                     throw new UserNotExistsException();
                 }
@@ -363,13 +364,13 @@ public class DatabaseService {
              PreparedStatement getLastInsertedSt = con.prepareStatement(getLastInserted);
              PreparedStatement storeRequestToAccountTableSt = con.prepareStatement(addNewRequestRecordToAccountTable)) {
             JsonObject metadata = new JsonObject(new HashMap<>());
-            metadata.put(RequestStrings.REQUEST_CONTACT_ADD_SENDER, new JsonObject(userId));
-            metadata.put(RequestStrings.REQUEST_CONTACT_ADD_RECEIVER, new JsonObject(newContactId));
+            metadata.put(RequestConstant.REQUEST_CONTACT_ADD_SENDER, new JsonObject(userId));
+            metadata.put(RequestConstant.REQUEST_CONTACT_ADD_RECEIVER, new JsonObject(newContactId));
             JsonObject visibleList = new JsonObject(new ArrayList<>());
             visibleList.add(new JsonObject(userId));
             visibleList.add(new JsonObject(newContactId));
             createNewRequestSt.setString(1, EnumRequestStatus.REQUEST_STATUS_PENDING.toString());
-            createNewRequestSt.setString(2, RequestStrings.REQUEST_CONTACT_ADD);
+            createNewRequestSt.setString(2, RequestConstant.REQUEST_CONTACT_ADD);
             createNewRequestSt.setString(3, metadata.toString());
             createNewRequestSt.setString(4, visibleList.toString());
             createNewRequestSt.executeUpdate();
@@ -425,14 +426,14 @@ public class DatabaseService {
              PreparedStatement getLastInsertedSt = con.prepareStatement(getLastInserted);
              PreparedStatement storeRequestToAccountTableSt = con.prepareStatement(addNewRequestRecordToAccountTable)) {
             JsonObject metadata = new JsonObject(new HashMap<>());
-            metadata.put(RequestStrings.REQUEST_GROUP_ADD_SENDER, new JsonObject(requester));
-            metadata.put(RequestStrings.REQUEST_GROUP_ADD_RECEIVER, new JsonObject(groupHostId));
-            metadata.put(RequestStrings.REQUEST_GROUP_ADD_GROUP_ID, new JsonObject(groupId));
+            metadata.put(RequestConstant.REQUEST_GROUP_ADD_SENDER, new JsonObject(requester));
+            metadata.put(RequestConstant.REQUEST_GROUP_ADD_RECEIVER, new JsonObject(groupHostId));
+            metadata.put(RequestConstant.REQUEST_GROUP_ADD_GROUP_ID, new JsonObject(groupId));
             JsonObject visibleList = new JsonObject(new ArrayList<>());
             visibleList.add(new JsonObject(requester));
             visibleList.add(new JsonObject(groupHostId));
             createNewRequestSt.setString(1, EnumRequestStatus.REQUEST_STATUS_PENDING.toString());
-            createNewRequestSt.setString(2, RequestStrings.REQUEST_GROUP_ADD);
+            createNewRequestSt.setString(2, RequestConstant.REQUEST_GROUP_ADD);
             createNewRequestSt.setString(3, metadata.toString());
             createNewRequestSt.setString(4, visibleList.toString());
             createNewRequestSt.executeUpdate();

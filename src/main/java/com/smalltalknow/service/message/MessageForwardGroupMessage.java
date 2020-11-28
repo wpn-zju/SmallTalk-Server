@@ -1,7 +1,7 @@
 package com.smalltalknow.service.message;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.smalltalknow.service.controller.websocket.ClientStrings;
+import com.smalltalknow.service.controller.websocket.ClientConstant;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
@@ -10,14 +10,14 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 public class MessageForwardGroupMessage {
-    @JsonProperty(ClientStrings.CHAT_MESSAGE_FORWARD_GROUP_SENDER)
+    @JsonProperty(ClientConstant.CHAT_MESSAGE_FORWARD_GROUP_SENDER)
     private final int sender;
-    @JsonProperty(ClientStrings.CHAT_MESSAGE_FORWARD_GROUP_RECEIVER)
+    @JsonProperty(ClientConstant.CHAT_MESSAGE_FORWARD_GROUP_RECEIVER)
     private final int receiver;
-    @JsonProperty(ClientStrings.CHAT_MESSAGE_FORWARD_GROUP_CONTENT)
+    @JsonProperty(ClientConstant.CHAT_MESSAGE_FORWARD_GROUP_CONTENT)
     private final String content;
-    @JsonProperty(ClientStrings.CHAT_MESSAGE_FORWARD_GROUP_CONTENT_TYPE)
+    @JsonProperty(ClientConstant.CHAT_MESSAGE_FORWARD_GROUP_CONTENT_TYPE)
     private final String contentType;
-    @JsonProperty(ClientStrings.TIMESTAMP)
+    @JsonProperty(ClientConstant.TIMESTAMP)
     private final String timestamp;
 }
