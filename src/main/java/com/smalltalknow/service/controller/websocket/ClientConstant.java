@@ -26,6 +26,9 @@ public final class ClientConstant {
     public static final String API_CHAT_GROUP_ADD_REFUSE = "/chat/group_add_refuse";
     public static final String API_CHAT_WEBRTC_CALL = "/chat/webrtc_call";
 
+    public static final String API_TEST_SEND = "/system/test_send";
+    public static final String API_TEST_SEND_PAYLOAD = "payload";
+
     public static final String TIMESTAMP = "timestamp";
     public static final String USER_SIGN_UP_USER_EMAIL = "user_email";
     public static final String USER_SIGN_UP_USER_PASSWORD = "user_password";

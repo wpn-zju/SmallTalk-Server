@@ -1,5 +1,6 @@
 package com.smalltalknow.service.message;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.smalltalknow.service.controller.websocket.ClientConstant;
@@ -10,7 +11,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @AllArgsConstructor(onConstructor = @__(@JsonCreator))
-public class UserRecoverPasswordPasscodeRequestMessage {
-    @JsonProperty(ClientConstant.USER_RECOVER_PASSWORD_PASSCODE_REQUEST_USER_EMAIL)
-    private final String userEmail;
+public class TestSendMessage {
+    @JsonProperty(ClientConstant.API_TEST_SEND_PAYLOAD)
+    private final String payload;
 }
