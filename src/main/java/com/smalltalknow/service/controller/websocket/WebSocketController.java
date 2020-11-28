@@ -22,9 +22,8 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Objects;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Controller
 @SuppressWarnings("unused")
@@ -338,61 +337,37 @@ public class WebSocketController {
         } catch (UserNotExistsException e) {
             logger.error("Unknown Error When Synchronizing - User not found!");
             e.printStackTrace();
-        } catch (GroupNotExistsException e) {
-            logger.error("Unknown Error When Synchronizing - Group not found!");
-            e.printStackTrace();
-        } catch (RequestNotExistsException e) {
-            logger.error("Unknown Error When Synchronizing - Request not found!");
-            e.printStackTrace();
         }
     }
 
     private void sendContactInfo(int userId, int contactId) {
         try {
             messagingTemplate.convertAndSendToUser(DatabaseService.queryLastSessionById(userId),
-                    ServerConstant.DIR_USER_SYNC, buildUserMessage(userId));
+                    ServerConstant.DIR_CONTACT_SYNC, buildContactMessage(contactId));
         } catch (UserNotExistsException e) {
             logger.error("Unknown Error When Synchronizing - User not found!");
-            e.printStackTrace();
-        } catch (GroupNotExistsException e) {
-            logger.error("Unknown Error When Synchronizing - Group not found!");
-            e.printStackTrace();
-        } catch (RequestNotExistsException e) {
-            logger.error("Unknown Error When Synchronizing - Request not found!");
             e.printStackTrace();
         }
     }
 
-    private void sendGroupInfo(int groupId) {
+    private void sendGroupInfo(int userId, int groupId) {
         try {
             if (DatabaseService.isOnline(userId)) {
                 messagingTemplate.convertAndSendToUser(DatabaseService.queryLastSessionById(userId),
-                        ServerConstant.DIR_USER_SYNC, buildUserMessage(userId));
+                        ServerConstant.DIR_GROUP_SYNC, buildGroupMessage(groupId));
             }
-        } catch (UserNotExistsException e) {
-            logger.error("Unknown Error When Synchronizing - User not found!");
-            e.printStackTrace();
         } catch (GroupNotExistsException e) {
             logger.error("Unknown Error When Synchronizing - Group not found!");
-            e.printStackTrace();
-        } catch (RequestNotExistsException e) {
-            logger.error("Unknown Error When Synchronizing - Request not found!");
             e.printStackTrace();
         }
     }
 
-    private void sendRequestInfo(int requestId) {
+    private void sendRequestInfo(int userId, int requestId) {
         try {
             if (DatabaseService.isOnline(userId)) {
                 messagingTemplate.convertAndSendToUser(DatabaseService.queryLastSessionById(userId),
-                        ServerConstant.DIR_USER_SYNC, buildUserMessage(userId));
+                        ServerConstant.DIR_REQUEST_SYNC, buildRequestMessage(requestId));
             }
-        } catch (UserNotExistsException e) {
-            logger.error("Unknown Error When Synchronizing - User not found!");
-            e.printStackTrace();
-        } catch (GroupNotExistsException e) {
-            logger.error("Unknown Error When Synchronizing - Group not found!");
-            e.printStackTrace();
         } catch (RequestNotExistsException e) {
             logger.error("Unknown Error When Synchronizing - Request not found!");
             e.printStackTrace();
@@ -851,7 +826,7 @@ public class WebSocketController {
                             messagingTemplate.convertAndSendToUser(DatabaseService.queryLastSessionById(receiver),
                                     ServerConstant.DIR_WEBRTC_CALL, messageSerialized);
                         } else {
-                            HashMap<String, JsonObject> refuseResponseMap = new HashMap<>();
+                            Map<String, JsonObject> refuseResponseMap = new HashMap<>();
                             refuseResponseMap.put(ServerConstant.CHAT_WEBRTC_CALL__SENDER, new JsonObject(receiver));
                             refuseResponseMap.put(ServerConstant.CHAT_WEBRTC_CALL__RECEIVER, new JsonObject(sender));
                             refuseResponseMap.put(ServerConstant.CHAT_WEBRTC_CALL__WEBRTC_COMMAND,
@@ -883,74 +858,53 @@ public class WebSocketController {
     }
 
     private String buildUserMessage(int userId)
-            throws UserNotExistsException, GroupNotExistsException, RequestNotExistsException {
+            throws UserNotExistsException {
         UserInfo userInfo = DatabaseService.getUserInfo(userId);
-        HashMap<String, JsonObject> userInfoMap = new HashMap<>();
+        Map<String, JsonObject> userInfoMap = new HashMap<>();
         userInfoMap.put(ServerConstant.ACC_USER_SYNC__USER_ID, new JsonObject(userInfo.getUserId()));
-        userInfoMap.put(ServerConstant.ACC_USER_SYNC__USER_SESSION, new JsonObject(userInfo.get))
+        userInfoMap.put(ServerConstant.ACC_USER_SYNC__USER_SESSION, new JsonObject(userInfo.getSession()));
         userInfoMap.put(ServerConstant.ACC_USER_SYNC__USER_EMAIL, new JsonObject(userInfo.getUserEmail()));
         userInfoMap.put(ServerConstant.ACC_USER_SYNC__USER_NAME, new JsonObject(userInfo.getUserName()));
         userInfoMap.put(ServerConstant.ACC_USER_SYNC__USER_PASSWORD, new JsonObject(userInfo.getUserPassword()));
-        ArrayList<JsonObject> contactList = new ArrayList<>();
-        for (int contactUserId : userInfo.getContactList()) {
-            UserInfo contactInfo = DatabaseService.getUserInfo(contactUserId);
-            HashMap<String, JsonObject> contactInfoMap = new HashMap<>();
-            contactInfoMap.put(ServerConstant.ACC_CONTACT_SYNC__CONTACT_ID,
-                    new JsonObject(contactInfo.getUserId()));
-            contactInfoMap.put(ServerConstant.ACC_CONTACT_SYNC__CONTACT_NAME,
-                    new JsonObject(contactInfo.getUserName()));
-            contactInfoMap.put(ServerConstant.ACC_CONTACT_SYNC__CONTACT_EMAIL,
-                    new JsonObject(contactInfo.getUserEmail()));
-            contactList.add(new JsonObject(contactInfoMap));
-        }
-        ArrayList<JsonObject> groupList = new ArrayList<>();
-        for (int groupId : userInfo.getGroupList()) {
-            GroupInfo groupInfo = DatabaseService.getGroupInfo(groupId);
-            HashMap<String, JsonObject> groupInfoMap = new HashMap<>();
-            groupInfoMap.put(ServerConstant.ACC_GROUP_SYNC__GROUP_ID,
-                    new JsonObject(groupInfo.getGroupId()));
-            groupInfoMap.put(ServerConstant.ACC_GROUP_SYNC__GROUP_NAME,
-                    new JsonObject(groupInfo.getGroupName()));
-            UserInfo hostInfo = DatabaseService.getUserInfo(groupInfo.getGroupHostId());
-            groupInfoMap.put(ServerConstant.ACC_GROUP_SYNC__GROUP_HOST,
-                    new JsonObject(hostInfo.getUserId()));
-            groupInfoMap.put(ServerConstant.ACC_USER_SYNC__USER_GROUP_LIST_G_HOST_NAME,
-                    new JsonObject(hostInfo.getUserName()));
-            groupInfoMap.put(ServerConstant.ACC_USER_SYNC__USER_GROUP_LIST_G_HOST_EMAIL,
-                    new JsonObject(hostInfo.getUserEmail()));
-            ArrayList<JsonObject> memberList = new ArrayList<>();
-            for (int memberId : groupInfo.getMemberList()) {
-                UserInfo memberInfo = DatabaseService.getUserInfo(memberId);
-                HashMap<String, JsonObject> memberInfoMap = new HashMap<>();
-                memberInfoMap.put(ServerConstant.ACC_USER_SYNC__USER_GROUP_LIST_G_MEMBER_LIST_G_MEMBER_USER_ID,
-                        new JsonObject(memberInfo.getUserId()));
-                memberInfoMap.put(ServerConstant.ACC_USER_SYNC__USER_GROUP_LIST_G_MEMBER_LIST_G_MEMBER_USER_NAME,
-                        new JsonObject(memberInfo.getUserName()));
-                memberInfoMap.put(ServerConstant.ACC_USER_SYNC__USER_GROUP_LIST_G_MEMBER_LIST_G_MEMBER_USER_EMAIL,
-                        new JsonObject(memberInfo.getUserEmail()));
-                memberList.add(new JsonObject(memberInfoMap));
-            }
-            groupInfoMap.put(ServerConstant.ACC_GROUP_SYNC__GROUP_MEMBER_LIST,
-                    new JsonObject(memberList));
-            contactList.add(new JsonObject(groupInfoMap));
-        }
-        ArrayList<JsonObject> requestList = new ArrayList<>();
-        for (int requestId : userInfo.getRequestList()) {
-            RequestInfo requestInfo = DatabaseService.getRequestInfo(requestId);
-            HashMap<String, JsonObject> requestInfoMap = new HashMap<>();
-            requestInfoMap.put(ServerConstant.ACC_REQUEST_SYNC__REQUEST_ID,
-                    new JsonObject(requestInfo.getRequestType()));
-            requestInfoMap.put(ServerConstant.ACC_REQUEST_SYNC__REQUEST_STATUS,
-                    new JsonObject(requestInfo.getRequestStatus()));
-            requestInfoMap.put(ServerConstant.ACC_REQUEST_SYNC__REQUEST_TYPE,
-                    new JsonObject(requestInfo.getRequestType()));
-            requestInfoMap.put(ServerConstant.ACC_REQUEST_SYNC__REQUEST_METADATA,
-                    new JsonObject(requestInfo.getRequestMetadata()));
-            requestList.add(new JsonObject(requestInfoMap));
-        }
-        userInfoMap.put(ServerConstant.ACC_USER_SYNC__CONTACT_LIST, new JsonObject(contactList));
-        userInfoMap.put(ServerConstant.ACC_USER_SYNC__GROUP_LIST, new JsonObject(groupList));
-        userInfoMap.put(ServerConstant.ACC_USER_SYNC__REQUEST_LIST, new JsonObject(requestList));
+        userInfoMap.put(ServerConstant.ACC_USER_SYNC__CONTACT_LIST, new JsonObject(userInfo.getContactList()
+                .stream().map(JsonObject::new).collect(Collectors.toList())));
+        userInfoMap.put(ServerConstant.ACC_USER_SYNC__GROUP_LIST, new JsonObject(userInfo.getGroupList()
+                .stream().map(JsonObject::new).collect(Collectors.toList())));
+        userInfoMap.put(ServerConstant.ACC_USER_SYNC__REQUEST_LIST, new JsonObject(userInfo.getRequestList()
+                .stream().map(JsonObject::new).collect(Collectors.toList())));
         return new JsonObject(userInfoMap).toString();
+    }
+
+    private String buildContactMessage(int contactId)
+            throws UserNotExistsException {
+        UserInfo contactInfo = DatabaseService.getUserInfo(contactId);
+        Map<String, JsonObject> contactInfoMap = new HashMap<>();
+        contactInfoMap.put(ServerConstant.ACC_CONTACT_SYNC__CONTACT_ID, new JsonObject(contactInfo.getUserId()));
+        contactInfoMap.put(ServerConstant.ACC_CONTACT_SYNC__CONTACT_EMAIL, new JsonObject(contactInfo.getUserEmail()));
+        contactInfoMap.put(ServerConstant.ACC_CONTACT_SYNC__CONTACT_NAME, new JsonObject(contactInfo.getUserName()));
+        return new JsonObject(contactInfoMap).toString();
+    }
+
+    private String buildGroupMessage(int groupId)
+            throws GroupNotExistsException {
+        GroupInfo groupInfo = DatabaseService.getGroupInfo(groupId);
+        Map<String, JsonObject> groupInfoMap = new HashMap<>();
+        groupInfoMap.put(ServerConstant.ACC_GROUP_SYNC__GROUP_ID, new JsonObject(groupInfo.getGroupId()));
+        groupInfoMap.put(ServerConstant.ACC_GROUP_SYNC__GROUP_NAME, new JsonObject(groupInfo.getGroupName()));
+        groupInfoMap.put(ServerConstant.ACC_GROUP_SYNC__GROUP_HOST, new JsonObject(groupInfo.getGroupHostId()));
+        groupInfoMap.put(ServerConstant.ACC_GROUP_SYNC__GROUP_MEMBER_LIST, new JsonObject(groupInfo.getMemberList()
+                .stream().map(JsonObject::new).collect(Collectors.toList())));
+        return new JsonObject(groupInfoMap).toString();
+    }
+
+    private String buildRequestMessage(int requestId)
+            throws RequestNotExistsException {
+        RequestInfo requestInfo = DatabaseService.getRequestInfo(requestId);
+        Map<String, JsonObject> requestInfoMap = new HashMap<>();
+        requestInfoMap.put(ServerConstant.ACC_REQUEST_SYNC__REQUEST_ID, new JsonObject(requestInfo.getRequestId()));
+        requestInfoMap.put(ServerConstant.ACC_REQUEST_SYNC__REQUEST_STATUS, new JsonObject(requestInfo.getRequestStatus()));
+        requestInfoMap.put(ServerConstant.ACC_REQUEST_SYNC__REQUEST_TYPE, new JsonObject(requestInfo.getRequestType()));
+        requestInfoMap.put(ServerConstant.ACC_REQUEST_SYNC__REQUEST_METADATA, requestInfo.getRequestMetadata());
+        return new JsonObject(requestInfoMap).toString();
     }
 }

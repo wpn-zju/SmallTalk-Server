@@ -2,6 +2,8 @@ package com.smalltalknow.service.tool;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 class Index {
     private int value;
@@ -54,12 +56,12 @@ public class JsonObject {
         object = value;
     }
 
-    public JsonObject(ArrayList<JsonObject> list) {
+    public JsonObject(List<JsonObject> list) {
         jsonType = JsonType.Array;
         object = list;
     }
 
-    public JsonObject(HashMap<String, JsonObject> kvMap) {
+    public JsonObject(Map<String, JsonObject> kvMap) {
         jsonType = JsonType.Object;
         object = kvMap;
     }
@@ -216,12 +218,12 @@ public class JsonObject {
 
 
     @SuppressWarnings("unchecked")
-    public ArrayList<JsonObject> getList() {
+    public List<JsonObject> getList() {
         if (jsonType != JsonType.Array) {
             throw new ClassCastException();
         }
 
-        return (ArrayList<JsonObject>) object;
+        return (List<JsonObject>) object;
     }
 
     public boolean containsKey(String key) {
@@ -233,12 +235,12 @@ public class JsonObject {
     }
 
     @SuppressWarnings("unchecked")
-    public HashMap<String, JsonObject> getObject() {
+    public Map<String, JsonObject> getObject() {
         if (jsonType != JsonType.Object) {
             throw new ClassCastException();
         }
 
-        return (HashMap<String, JsonObject>) object;
+        return (Map<String, JsonObject>) object;
     }
 
     public JsonObject get(int index) {
@@ -309,8 +311,8 @@ public class JsonObject {
         return ret.toString();
     }
 
-    private static ArrayList<JsonObject> listParser(String input, Index index) {
-        ArrayList<JsonObject> list = new ArrayList<>();
+    private static List<JsonObject> listParser(String input, Index index) {
+        List<JsonObject> list = new ArrayList<>();
 
         index.increment();
 
@@ -363,8 +365,8 @@ public class JsonObject {
         return list;
     }
 
-    private static Object objectParser(String input, Index index) {
-        HashMap<String, JsonObject> map = new HashMap<>();
+    private static Map<String, JsonObject> objectParser(String input, Index index) {
+        Map<String, JsonObject> map = new HashMap<>();
 
         index.increment();
 

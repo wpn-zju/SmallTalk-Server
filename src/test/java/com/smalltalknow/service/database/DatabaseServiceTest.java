@@ -16,6 +16,7 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.testng.Assert.*;
@@ -315,7 +316,7 @@ public class DatabaseServiceTest {
 
     @Test
     public void testCreateAndCheckPasscode() throws PasscodeException {
-        HashMap<String, String> kvMap = new HashMap<>();
+        Map<String, String> kvMap = new HashMap<>();
         kvMap.put("key1", "value1");
         kvMap.put("key2", "value2");
         kvMap.put("key3", "value3");
@@ -325,7 +326,7 @@ public class DatabaseServiceTest {
 
     @Test(expectedExceptions = PasscodeException.class)
     public void testCreateAndCheckInvalidPasscode() throws PasscodeException {
-        HashMap<String, String> kvMap = new HashMap<>();
+        Map<String, String> kvMap = new HashMap<>();
         kvMap.put("key1", "value1");
         kvMap.put("key2", "value2");
         kvMap.put("key3", "value3");
