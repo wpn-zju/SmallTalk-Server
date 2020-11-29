@@ -16,13 +16,13 @@ public final class ServerConstant {
     public static final String DIR_USER_SIGN_UP_SUCCESS = "/queue/port/user_sign_up_success";
     public static final String DIR_USER_SIGN_UP_FAILED_EMAIL_EXISTS = "/queue/port/user_sign_up_failed_email_exists";
     public static final String DIR_USER_SIGN_UP_FAILED_PASSCODE_INCORRECT = "/queue/port/user_sign_up_failed_passcode_incorrect";
-    public static final String DIR_USER_SIGN_UP_PASSCODE_REQUEST_SUCCESS = "/queue/port/user_sync";
+    public static final String DIR_USER_SIGN_UP_PASSCODE_REQUEST_SUCCESS = "/queue/port/user_sign_up_passcode_request_success";
     public static final String DIR_USER_SIGN_UP_PASSCODE_REQUEST_FAILED_SERVER_ERROR = "/queue/port/user_sign_up_passcode_request_failed_server_error";
     public static final String DIR_USER_SIGN_UP_PASSCODE_REQUEST_FAILED_EMAIL_EXISTS = "/queue/port/user_sign_up_passcode_request_failed_email_exists";
     public static final String DIR_USER_RECOVER_PASSWORD_SUCCESS = "/queue/port/user_recover_password_success";
     public static final String DIR_USER_RECOVER_PASSWORD_FAILED_USER_NOT_FOUND = "/queue/port/user_recover_password_failed_user_not_found";
     public static final String DIR_USER_RECOVER_PASSWORD_FAILED_PASSCODE_INCORRECT ="/queue/port/user_recover_password_failed_passcode_incorrect";
-    public static final String DIR_USER_RECOVER_PASSWORD_PASSCODE_REQUEST_SUCCESS = "/queue/port/user_sync";
+    public static final String DIR_USER_RECOVER_PASSWORD_PASSCODE_REQUEST_SUCCESS = "/queue/port/user_recover_passcode_passcode_request_success";
     public static final String DIR_USER_RECOVER_PASSWORD_PASSCODE_REQUEST_FAILED_SERVER_ERROR = "/queue/port/user_recover_password_passcode_request_failed_server_error";
     public static final String DIR_USER_RECOVER_PASSWORD_PASSCODE_REQUEST_FAILED_USER_NOT_FOUND = "/queue/port/user_recover_password_passcode_request_failed_user_not_found";
     public static final String DIR_USER_SIGN_IN_SUCCESS = "/queue/port/user_sign_in_success";

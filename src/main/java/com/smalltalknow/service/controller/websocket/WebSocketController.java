@@ -35,7 +35,7 @@ public class WebSocketController {
 
     private void proceedToSignIn(int userId, String session) {
         messagingTemplate.convertAndSendToUser(session,
-                ServerConstant.DIR_USER_SIGN_IN_SUCCESS, new Object());
+                ServerConstant.DIR_USER_SIGN_IN_SUCCESS, "Success");
 
         DatabaseService.updateSession(userId, session);
         DatabaseService.updateLoginRecord(userId);
@@ -83,24 +83,24 @@ public class WebSocketController {
             DatabaseService.modifyUserName(userId, String.format("User %s", userId));
             DatabaseService.modifyUserPassword(userId, userPassword);
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SIGN_UP_SUCCESS, new Object());
+                    ServerConstant.DIR_USER_SIGN_UP_SUCCESS, "Success");
             EmailHelper.sendNewUserNotification(userEmail);
             proceedToSignIn(userId, session);
         } catch (PasscodeException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SIGN_UP_FAILED_PASSCODE_INCORRECT, new Object());
+                    ServerConstant.DIR_USER_SIGN_UP_FAILED_PASSCODE_INCORRECT, "Success");
         } catch (UserEmailExistsException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SIGN_UP_FAILED_EMAIL_EXISTS, new Object());
+                    ServerConstant.DIR_USER_SIGN_UP_FAILED_EMAIL_EXISTS, "Success");
         } catch (InvalidUserEmailException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_INVALID_USER_EMAIL, new Object());
+                    ServerConstant.DIR_INVALID_USER_EMAIL, "Success");
         } catch (InvalidUserPasswordException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_INVALID_USER_PASSWORD, new Object());
+                    ServerConstant.DIR_INVALID_USER_PASSWORD, "Success");
         } catch (InvalidPasscodeException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_INVALID_PASSCODE, new Object());
+                    ServerConstant.DIR_INVALID_PASSCODE, "Success");
         } catch (UnirestException e) {
             e.printStackTrace();
         }
@@ -116,7 +116,7 @@ public class WebSocketController {
 
             if (DatabaseService.hasUserWithEmail(userEmail)) {
                 messagingTemplate.convertAndSendToUser(session,
-                        ServerConstant.DIR_USER_SIGN_UP_PASSCODE_REQUEST_FAILED_EMAIL_EXISTS, new Object());
+                        ServerConstant.DIR_USER_SIGN_UP_PASSCODE_REQUEST_FAILED_EMAIL_EXISTS, "Success");
             } else {
                 String passcode = DatabaseService.newPasscode(new HashMap<String, String>() {{
                     put(ServerConstant.PSC_TYPE, ServerConstant.PSC_TYPE_USER_SIGN_UP);
@@ -126,14 +126,14 @@ public class WebSocketController {
                 EmailHelper.sendPasscode(userEmail, "Creating New Account", passcode);
 
                 messagingTemplate.convertAndSendToUser(session,
-                        ServerConstant.DIR_USER_SIGN_UP_PASSCODE_REQUEST_SUCCESS, new Object());
+                        ServerConstant.DIR_USER_SIGN_UP_PASSCODE_REQUEST_SUCCESS, "Success");
             }
         } catch (InvalidUserEmailException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_INVALID_USER_EMAIL, new Object());
+                    ServerConstant.DIR_INVALID_USER_EMAIL, "Success");
         } catch (UnirestException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SIGN_UP_PASSCODE_REQUEST_FAILED_SERVER_ERROR, new Object());
+                    ServerConstant.DIR_USER_SIGN_UP_PASSCODE_REQUEST_FAILED_SERVER_ERROR, "Success");
         }
     }
 
@@ -156,22 +156,23 @@ public class WebSocketController {
             }});
             DatabaseService.modifyUserPassword(userId, userPassword);
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_RECOVER_PASSWORD_SUCCESS, new Object());
+                    ServerConstant.DIR_USER_RECOVER_PASSWORD_SUCCESS, "Success");
+            proceedToSignIn(userId, session);
         } catch (UserEmailNotExistsException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_RECOVER_PASSWORD_FAILED_USER_NOT_FOUND, new Object());
+                    ServerConstant.DIR_USER_RECOVER_PASSWORD_FAILED_USER_NOT_FOUND, "Success");
         } catch (PasscodeException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_RECOVER_PASSWORD_FAILED_PASSCODE_INCORRECT, new Object());
+                    ServerConstant.DIR_USER_RECOVER_PASSWORD_FAILED_PASSCODE_INCORRECT, "Success");
         } catch (InvalidUserEmailException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_INVALID_USER_EMAIL, new Object());
+                    ServerConstant.DIR_INVALID_USER_EMAIL, "Success");
         } catch (InvalidUserPasswordException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_INVALID_USER_PASSWORD, new Object());
+                    ServerConstant.DIR_INVALID_USER_PASSWORD, "Success");
         } catch (InvalidPasscodeException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_INVALID_PASSCODE, new Object());
+                    ServerConstant.DIR_INVALID_PASSCODE, "Success");
         }
     }
 
@@ -193,17 +194,17 @@ public class WebSocketController {
                 EmailHelper.sendPasscode(userEmail, "Recovering Password", passcode);
 
                 messagingTemplate.convertAndSendToUser(session,
-                        ServerConstant.DIR_USER_RECOVER_PASSWORD_PASSCODE_REQUEST_SUCCESS, new Object());
+                        ServerConstant.DIR_USER_RECOVER_PASSWORD_PASSCODE_REQUEST_SUCCESS, "Success");
             } else {
                 messagingTemplate.convertAndSendToUser(session,
-                        ServerConstant.DIR_USER_RECOVER_PASSWORD_PASSCODE_REQUEST_FAILED_USER_NOT_FOUND, new Object());
+                        ServerConstant.DIR_USER_RECOVER_PASSWORD_PASSCODE_REQUEST_FAILED_USER_NOT_FOUND, "Success");
             }
         } catch (InvalidUserEmailException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_INVALID_USER_EMAIL, new Object());
+                    ServerConstant.DIR_INVALID_USER_EMAIL, "Success");
         } catch (UnirestException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_RECOVER_PASSWORD_PASSCODE_REQUEST_FAILED_SERVER_ERROR, new Object());
+                    ServerConstant.DIR_USER_RECOVER_PASSWORD_PASSCODE_REQUEST_FAILED_SERVER_ERROR, "Success");
         }
     }
 
@@ -223,20 +224,20 @@ public class WebSocketController {
                 proceedToSignIn(userId, session);
             } else {
                 messagingTemplate.convertAndSendToUser(session,
-                        ServerConstant.DIR_USER_SIGN_IN_FAILED_PASSWORD_INCORRECT, new Object());
+                        ServerConstant.DIR_USER_SIGN_IN_FAILED_PASSWORD_INCORRECT, "Success");
             }
         } catch (UserNotExistsException e) {
             logger.error("Unknown Error When Sign In - User not found!");
             e.printStackTrace();
         } catch (UserEmailNotExistsException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SIGN_IN_FAILED_USER_NOT_FOUND, new Object());
+                    ServerConstant.DIR_USER_SIGN_IN_FAILED_USER_NOT_FOUND, "Success");
         } catch (InvalidUserEmailException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_INVALID_USER_EMAIL, new Object());
+                    ServerConstant.DIR_INVALID_USER_EMAIL, "Success");
         } catch (InvalidUserPasswordException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_INVALID_USER_PASSWORD, new Object());
+                    ServerConstant.DIR_INVALID_USER_PASSWORD, "Success");
         }
     }
 
@@ -252,16 +253,16 @@ public class WebSocketController {
             proceedToSignIn(userId, session);
         } catch (SessionInvalidException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SESSION_INVALID, new Object());
+                    ServerConstant.DIR_USER_SESSION_INVALID, "Success");
         } catch (SessionExpiredException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SESSION_EXPIRED, new Object());
+                    ServerConstant.DIR_USER_SESSION_EXPIRED, "Success");
         } catch (SessionRevokedException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SESSION_REVOKED, new Object());
+                    ServerConstant.DIR_USER_SESSION_REVOKED, "Success");
         } catch (InvalidSessionException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_INVALID_SESSION, new Object());
+                    ServerConstant.DIR_INVALID_SESSION, "Success");
         }
     }
 
@@ -273,16 +274,16 @@ public class WebSocketController {
             int userId = DatabaseService.queryUserIdBySession(session);
             DatabaseService.updateLogoutRecord(userId);
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SIGN_OUT_SUCCESS, new Object());
+                    ServerConstant.DIR_USER_SIGN_OUT_SUCCESS, "Success");
         } catch (SessionInvalidException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SESSION_INVALID, new Object());
+                    ServerConstant.DIR_USER_SESSION_INVALID, "Success");
         } catch (SessionExpiredException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SESSION_EXPIRED, new Object());
+                    ServerConstant.DIR_USER_SESSION_EXPIRED, "Success");
         } catch (SessionRevokedException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SESSION_REVOKED, new Object());
+                    ServerConstant.DIR_USER_SESSION_REVOKED, "Success");
         }
     }
 
@@ -297,20 +298,20 @@ public class WebSocketController {
             int userId = DatabaseService.queryUserIdBySession(session);
             DatabaseService.modifyUserName(userId, newUserName);
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_MODIFY_NAME_SUCCESS, new Object());
+                    ServerConstant.DIR_USER_MODIFY_NAME_SUCCESS, "Success");
             sendUserInfo(userId);
         } catch (SessionInvalidException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SESSION_INVALID, new Object());
+                    ServerConstant.DIR_USER_SESSION_INVALID, "Success");
         } catch (SessionExpiredException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SESSION_EXPIRED, new Object());
+                    ServerConstant.DIR_USER_SESSION_EXPIRED, "Success");
         } catch (SessionRevokedException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SESSION_REVOKED, new Object());
+                    ServerConstant.DIR_USER_SESSION_REVOKED, "Success");
         } catch (InvalidUserNameException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_INVALID_USER_NAME, new Object());
+                    ServerConstant.DIR_INVALID_USER_NAME, "Success");
         }
     }
 
@@ -325,20 +326,20 @@ public class WebSocketController {
             int userId = DatabaseService.queryUserIdBySession(session);
             DatabaseService.modifyUserPassword(userId, newUserPassword);
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_MODIFY_PASSWORD_SUCCESS, new Object());
+                    ServerConstant.DIR_USER_MODIFY_PASSWORD_SUCCESS, "Success");
             sendUserInfo(userId);
         } catch (SessionInvalidException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SESSION_INVALID, new Object());
+                    ServerConstant.DIR_USER_SESSION_INVALID, "Success");
         } catch (SessionExpiredException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SESSION_EXPIRED, new Object());
+                    ServerConstant.DIR_USER_SESSION_EXPIRED, "Success");
         } catch (SessionRevokedException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SESSION_REVOKED, new Object());
+                    ServerConstant.DIR_USER_SESSION_REVOKED, "Success");
         } catch (InvalidUserPasswordException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_INVALID_USER_PASSWORD, new Object());
+                    ServerConstant.DIR_INVALID_USER_PASSWORD, "Success");
         }
     }
 
@@ -396,13 +397,13 @@ public class WebSocketController {
             sendUserInfo(DatabaseService.queryUserIdBySession(session));
         } catch (SessionInvalidException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SESSION_INVALID, new Object());
+                    ServerConstant.DIR_USER_SESSION_INVALID, "Success");
         } catch (SessionExpiredException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SESSION_EXPIRED, new Object());
+                    ServerConstant.DIR_USER_SESSION_EXPIRED, "Success");
         } catch (SessionRevokedException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SESSION_REVOKED, new Object());
+                    ServerConstant.DIR_USER_SESSION_REVOKED, "Success");
         }
     }
 
@@ -415,13 +416,13 @@ public class WebSocketController {
             sendContactInfo(DatabaseService.queryUserIdBySession(session), contactId);
         } catch (SessionInvalidException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SESSION_INVALID, new Object());
+                    ServerConstant.DIR_USER_SESSION_INVALID, "Success");
         } catch (SessionExpiredException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SESSION_EXPIRED, new Object());
+                    ServerConstant.DIR_USER_SESSION_EXPIRED, "Success");
         } catch (SessionRevokedException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SESSION_REVOKED, new Object());
+                    ServerConstant.DIR_USER_SESSION_REVOKED, "Success");
         }
     }
 
@@ -434,13 +435,13 @@ public class WebSocketController {
             sendGroupInfo(DatabaseService.queryUserIdBySession(session), groupId);
         } catch (SessionInvalidException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SESSION_INVALID, new Object());
+                    ServerConstant.DIR_USER_SESSION_INVALID, "Success");
         } catch (SessionExpiredException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SESSION_EXPIRED, new Object());
+                    ServerConstant.DIR_USER_SESSION_EXPIRED, "Success");
         } catch (SessionRevokedException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SESSION_REVOKED, new Object());
+                    ServerConstant.DIR_USER_SESSION_REVOKED, "Success");
         }
     }
 
@@ -453,13 +454,13 @@ public class WebSocketController {
             sendUserInfo(DatabaseService.queryUserIdBySession(session));
         } catch (SessionInvalidException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SESSION_INVALID, new Object());
+                    ServerConstant.DIR_USER_SESSION_INVALID, "Success");
         } catch (SessionExpiredException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SESSION_EXPIRED, new Object());
+                    ServerConstant.DIR_USER_SESSION_EXPIRED, "Success");
         } catch (SessionRevokedException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SESSION_REVOKED, new Object());
+                    ServerConstant.DIR_USER_SESSION_REVOKED, "Success");
         }
     }
 
@@ -484,7 +485,7 @@ public class WebSocketController {
                 }
             } else {
                 messagingTemplate.convertAndSendToUser(session,
-                        ServerConstant.DIR_USER_SESSION_EXPIRED, new Object());
+                        ServerConstant.DIR_USER_SESSION_EXPIRED, "Success");
             }
         } catch (IOException e) {
             logger.error("Forward Message Failed - IOException");
@@ -511,7 +512,7 @@ public class WebSocketController {
                 }
             } else {
                 messagingTemplate.convertAndSendToUser(session,
-                        ServerConstant.DIR_USER_SESSION_EXPIRED, new Object());
+                        ServerConstant.DIR_USER_SESSION_EXPIRED, "Success");
             }
         } catch (GroupNotExistsException e) {
             logger.error("Forward Group Message Failed - Group not found!");
@@ -534,29 +535,29 @@ public class WebSocketController {
             int contactId = DatabaseService.queryUserIdByEmail(contactEmail);
             if (userId == contactId || DatabaseService.isFriend(userId, contactId)) {
                 messagingTemplate.convertAndSendToUser(session,
-                        ServerConstant.DIR_CONTACT_ADD_REQUEST_FAILED_ALREADY_CONTACT, new Object());
+                        ServerConstant.DIR_CONTACT_ADD_REQUEST_FAILED_ALREADY_CONTACT, "Success");
             } else {
                 int requestId = DatabaseService.newContactRequest(userId, contactId);
                 messagingTemplate.convertAndSendToUser(session,
-                        ServerConstant.DIR_CONTACT_ADD_REQUEST_SUCCESS, new Object());
+                        ServerConstant.DIR_CONTACT_ADD_REQUEST_SUCCESS, "Success");
                 sendUserInfo(userId);
                 sendUserInfo(contactId);
             }
         } catch (UserEmailNotExistsException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_CONTACT_ADD_REQUEST_FAILED_USER_NOT_FOUND, new Object());
+                    ServerConstant.DIR_CONTACT_ADD_REQUEST_FAILED_USER_NOT_FOUND, "Success");
         } catch (SessionInvalidException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SESSION_INVALID, new Object());
+                    ServerConstant.DIR_USER_SESSION_INVALID, "Success");
         } catch (SessionExpiredException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SESSION_EXPIRED, new Object());
+                    ServerConstant.DIR_USER_SESSION_EXPIRED, "Success");
         } catch (SessionRevokedException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SESSION_REVOKED, new Object());
+                    ServerConstant.DIR_USER_SESSION_REVOKED, "Success");
         } catch (InvalidUserEmailException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_INVALID_USER_EMAIL, new Object());
+                    ServerConstant.DIR_INVALID_USER_EMAIL, "Success");
         }
     }
 
@@ -581,20 +582,20 @@ public class WebSocketController {
                 }
             } else {
                 messagingTemplate.convertAndSendToUser(session,
-                        ServerConstant.DIR_REQUEST_NOT_FOUND, new Object());
+                        ServerConstant.DIR_REQUEST_NOT_FOUND, "Success");
             }
         } catch (RequestNotExistsException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_REQUEST_NOT_FOUND, new Object());
+                    ServerConstant.DIR_REQUEST_NOT_FOUND, "Success");
         } catch (SessionInvalidException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SESSION_INVALID, new Object());
+                    ServerConstant.DIR_USER_SESSION_INVALID, "Success");
         } catch (SessionExpiredException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SESSION_EXPIRED, new Object());
+                    ServerConstant.DIR_USER_SESSION_EXPIRED, "Success");
         } catch (SessionRevokedException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SESSION_REVOKED, new Object());
+                    ServerConstant.DIR_USER_SESSION_REVOKED, "Success");
         }
     }
 
@@ -619,20 +620,20 @@ public class WebSocketController {
                 }
             } else {
                 messagingTemplate.convertAndSendToUser(session,
-                        ServerConstant.DIR_REQUEST_NOT_FOUND, new Object());
+                        ServerConstant.DIR_REQUEST_NOT_FOUND, "Success");
             }
         } catch (RequestNotExistsException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_REQUEST_NOT_FOUND, new Object());
+                    ServerConstant.DIR_REQUEST_NOT_FOUND, "Success");
         } catch (SessionInvalidException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SESSION_INVALID, new Object());
+                    ServerConstant.DIR_USER_SESSION_INVALID, "Success");
         } catch (SessionExpiredException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SESSION_EXPIRED, new Object());
+                    ServerConstant.DIR_USER_SESSION_EXPIRED, "Success");
         } catch (SessionRevokedException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SESSION_REVOKED, new Object());
+                    ServerConstant.DIR_USER_SESSION_REVOKED, "Success");
         }
     }
 
@@ -652,16 +653,16 @@ public class WebSocketController {
             sendUserInfo(userId);
         } catch (SessionInvalidException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SESSION_INVALID, new Object());
+                    ServerConstant.DIR_USER_SESSION_INVALID, "Success");
         } catch (SessionExpiredException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SESSION_EXPIRED, new Object());
+                    ServerConstant.DIR_USER_SESSION_EXPIRED, "Success");
         } catch (SessionRevokedException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SESSION_REVOKED, new Object());
+                    ServerConstant.DIR_USER_SESSION_REVOKED, "Success");
         } catch (InvalidGroupNameException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_INVALID_GROUP_NAME, new Object());
+                    ServerConstant.DIR_INVALID_GROUP_NAME, "Success");
         }
     }
 
@@ -682,26 +683,26 @@ public class WebSocketController {
             if (isGroupHost(userId, groupId)) {
                 DatabaseService.modifyGroupName(groupId, newGroupName);
                 messagingTemplate.convertAndSendToUser(session,
-                        ServerConstant.DIR_GROUP_MODIFY_NAME_SUCCESS, new Object());
+                        ServerConstant.DIR_GROUP_MODIFY_NAME_SUCCESS, "Success");
             } else {
                 messagingTemplate.convertAndSendToUser(session,
-                        ServerConstant.DIR_GROUP_MODIFY_NAME_FAILED_PERMISSION_DENIED, new Object());
+                        ServerConstant.DIR_GROUP_MODIFY_NAME_FAILED_PERMISSION_DENIED, "Success");
             }
         } catch (GroupNotExistsException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_GROUP_MODIFY_NAME_FAILED_GROUP_NOT_FOUND, new Object());
+                    ServerConstant.DIR_GROUP_MODIFY_NAME_FAILED_GROUP_NOT_FOUND, "Success");
         } catch (SessionInvalidException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SESSION_INVALID, new Object());
+                    ServerConstant.DIR_USER_SESSION_INVALID, "Success");
         } catch (SessionExpiredException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SESSION_EXPIRED, new Object());
+                    ServerConstant.DIR_USER_SESSION_EXPIRED, "Success");
         } catch (SessionRevokedException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SESSION_REVOKED, new Object());
+                    ServerConstant.DIR_USER_SESSION_REVOKED, "Success");
         } catch (InvalidGroupNameException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_INVALID_GROUP_NAME, new Object());
+                    ServerConstant.DIR_INVALID_GROUP_NAME, "Success");
         }
     }
 
@@ -714,28 +715,28 @@ public class WebSocketController {
             int userId = DatabaseService.queryUserIdBySession(session);
             if (DatabaseService.isMember(groupId, userId)) {
                 messagingTemplate.convertAndSendToUser(session,
-                        ServerConstant.DIR_GROUP_ADD_REQUEST_FAILED_ALREADY_MEMBER, new Object());
+                        ServerConstant.DIR_GROUP_ADD_REQUEST_FAILED_ALREADY_MEMBER, "Success");
             } else {
                 GroupInfo groupInfo = DatabaseService.getGroupInfo(groupId);
                 int hostId = groupInfo.getGroupHostId();
                 int requestId = DatabaseService.newMemberRequest(userId, groupId, hostId);
                 messagingTemplate.convertAndSendToUser(session,
-                        ServerConstant.DIR_GROUP_ADD_REQUEST_SUCCESS, new Object());
+                        ServerConstant.DIR_GROUP_ADD_REQUEST_SUCCESS, "Success");
                 sendUserInfo(userId);
                 sendUserInfo(hostId);
             }
         } catch (GroupNotExistsException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_GROUP_ADD_REQUEST_FAILED_GROUP_NOT_FOUND, new Object());
+                    ServerConstant.DIR_GROUP_ADD_REQUEST_FAILED_GROUP_NOT_FOUND, "Success");
         } catch (SessionInvalidException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SESSION_INVALID, new Object());
+                    ServerConstant.DIR_USER_SESSION_INVALID, "Success");
         } catch (SessionExpiredException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SESSION_EXPIRED, new Object());
+                    ServerConstant.DIR_USER_SESSION_EXPIRED, "Success");
         } catch (SessionRevokedException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SESSION_REVOKED, new Object());
+                    ServerConstant.DIR_USER_SESSION_REVOKED, "Success");
         }
     }
 
@@ -761,23 +762,23 @@ public class WebSocketController {
                 }
             } else {
                 messagingTemplate.convertAndSendToUser(session,
-                        ServerConstant.DIR_REQUEST_NOT_FOUND, new Object());
+                        ServerConstant.DIR_REQUEST_NOT_FOUND, "Success");
             }
         } catch (GroupNotExistsException e) {
             logger.error("Group Add Failed - Unknown Error!");
             e.printStackTrace();
         } catch (RequestNotExistsException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_REQUEST_NOT_FOUND, new Object());
+                    ServerConstant.DIR_REQUEST_NOT_FOUND, "Success");
         } catch (SessionInvalidException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SESSION_INVALID, new Object());
+                    ServerConstant.DIR_USER_SESSION_INVALID, "Success");
         } catch (SessionExpiredException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SESSION_EXPIRED, new Object());
+                    ServerConstant.DIR_USER_SESSION_EXPIRED, "Success");
         } catch (SessionRevokedException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SESSION_REVOKED, new Object());
+                    ServerConstant.DIR_USER_SESSION_REVOKED, "Success");
         }
     }
 
@@ -803,23 +804,23 @@ public class WebSocketController {
                 }
             } else {
                 messagingTemplate.convertAndSendToUser(session,
-                        ServerConstant.DIR_REQUEST_NOT_FOUND, new Object());
+                        ServerConstant.DIR_REQUEST_NOT_FOUND, "Success");
             }
         } catch (GroupNotExistsException e) {
             logger.error("Group Add Failed - Unknown Error!");
             e.printStackTrace();
         } catch (RequestNotExistsException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_REQUEST_NOT_FOUND, new Object());
+                    ServerConstant.DIR_REQUEST_NOT_FOUND, "Success");
         } catch (SessionInvalidException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SESSION_INVALID, new Object());
+                    ServerConstant.DIR_USER_SESSION_INVALID, "Success");
         } catch (SessionExpiredException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SESSION_EXPIRED, new Object());
+                    ServerConstant.DIR_USER_SESSION_EXPIRED, "Success");
         } catch (SessionRevokedException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SESSION_REVOKED, new Object());
+                    ServerConstant.DIR_USER_SESSION_REVOKED, "Success");
         }
     }
 
@@ -863,7 +864,7 @@ public class WebSocketController {
                 }
             } else {
                 messagingTemplate.convertAndSendToUser(session,
-                        ServerConstant.DIR_USER_SESSION_EXPIRED, new Object());
+                        ServerConstant.DIR_USER_SESSION_EXPIRED, "Success");
             }
         } catch (IOException e) {
             logger.error("WebRTC Call Failed - IOException");
