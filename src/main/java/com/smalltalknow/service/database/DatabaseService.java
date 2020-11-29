@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 
 public class DatabaseService {
     private static final Logger logger = LoggerFactory.getLogger(DatabaseService.class);
-    private static final String url = "jdbc:MySQL://localhost:3306/small_talk?" +
+    private static final String url = "jdbc:MySQL://localhost:3306/small_talk_prod?" +
             "useUnicode=true&" +
             "characterEncoding=utf-8&" +
             "serverTimezone=UTC&" +
