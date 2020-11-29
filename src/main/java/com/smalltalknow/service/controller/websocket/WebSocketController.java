@@ -48,20 +48,6 @@ public class WebSocketController {
         messagingTemplate.convertAndSendToUser(session, ServerConstant.DIR_NEW_MESSAGE, content);
     }
 
-    @MessageMapping(ClientConstant.API_TEST_SEND)
-    public void testMessage(SimpMessageHeaderAccessor sha, TestSendMessage message) {
-        logger.info("Received");
-        String session = Objects.requireNonNull(sha.getUser()).getName();
-        String payload = message.getPayload();
-
-        Map<String, JsonObject> contactInfoMap = new HashMap<>();
-        contactInfoMap.put(ServerConstant.ACC_CONTACT_SYNC__CONTACT_ID, new JsonObject(10000));
-        contactInfoMap.put(ServerConstant.ACC_CONTACT_SYNC__CONTACT_EMAIL, new JsonObject("FakeEmail@syr.edu"));
-        contactInfoMap.put(ServerConstant.ACC_CONTACT_SYNC__CONTACT_NAME, new JsonObject(payload));
-        messagingTemplate.convertAndSendToUser(session,
-                ServerConstant.DIR_CONTACT_SYNC, new JsonObject(contactInfoMap).toString());
-    }
-
     @MessageMapping(ClientConstant.API_USER_SIGN_UP)
     public void userSignUp(SimpMessageHeaderAccessor sha, UserSignUpMessage message) {
         String session = Objects.requireNonNull(sha.getUser()).getName();
