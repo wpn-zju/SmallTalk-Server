@@ -27,14 +27,13 @@ public class WebSocketEventListener {
         logger.info(String.format("Disconnected - Session ID = %s", Objects.requireNonNull(event.getUser()).getName()));
     }
 
-
     @EventListener
     private void handleSessionSubscribed(SessionSubscribeEvent event) {
-        logger.info(String.format("Subscribed - Session ID = %s", Objects.requireNonNull(event.getUser()).getName()));
+        // logger.info(String.format("Subscribed - Session ID = %s", Objects.requireNonNull(event.getUser()).getName()));
     }
 
     @EventListener
     private void handleSessionUnsubscribed(SessionUnsubscribeEvent event) {
-        logger.info(String.format("Unsubscribed - Session ID = %s", Objects.requireNonNull(event.getUser()).getName()));
+        // logger.info(String.format("Unsubscribed - Session ID = %s", Objects.requireNonNull(event.getUser()).getName()));
     }
 }

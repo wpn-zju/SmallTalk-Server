@@ -36,8 +36,11 @@ public final class ServerConstant {
     public static final String DIR_USER_MODIFY_PASSWORD_SUCCESS = "/queue/port/user_modify_password_success";
     public static final String DIR_USER_SYNC = "/queue/port/user_sync";
     public static final String DIR_CONTACT_SYNC = "/queue/port/contact_sync";
+    public static final String DIR_CONTACT_SYNC_FAILED_USER_NOT_FOUND = "/queue/port/contact_sync_failed_user_not_found";
     public static final String DIR_GROUP_SYNC = "/queue/port/group_sync";
+    public static final String DIR_GROUP_SYNC_FAILED_GROUP_NOT_FOUND = "/queue/port/group_sync_failed_group_not_found";
     public static final String DIR_REQUEST_SYNC = "/queue/port/request_sync";
+    public static final String DIR_REQUEST_SYNC_FAILED_REQUEST_NOT_FOUND = "/queue/port/request_sync_failed_request_not_found";
     public static final String DIR_NEW_MESSAGE = "/queue/port/new_message";
     public static final String DIR_CONTACT_ADD_REQUEST_SUCCESS = "/queue/port/contact_add_request_success";
     public static final String DIR_CONTACT_ADD_REQUEST_FAILED_ALREADY_CONTACT = "/queue/port/contact_add_request_failed_already_contact";

@@ -12,6 +12,7 @@ public final class ClientConstant {
     public static final String API_USER_MODIFY_PASSWORD = "/system/user_modify_password";
     public static final String API_LOAD_USER = "/system/load_user";
     public static final String API_LOAD_CONTACT = "/system/load_contact";
+    public static final String API_LOAD_CONTACT_BY_EMAIL = "/system/load_contact_by_email";
     public static final String API_LOAD_GROUP = "/system/load_group";
     public static final String API_LOAD_REQUEST = "/system/load_request";
     public static final String API_CHAT_MESSAGE_FORWARD = "/chat/message_forward";
@@ -41,6 +42,7 @@ public final class ClientConstant {
     public static final String USER_MODIFY_USER_NAME_NEW_USER_NAME = "new_user_name";
     public static final String USER_MODIFY_USER_PASSWORD_NEW_USER_PASSWORD = "new_user_password";
     public static final String LOAD_CONTACT_CONTACT_ID = "contact_id";
+    public static final String LOAD_CONTACT_BY_EMAIL_CONTACT_EMAIL = "contact_email";
     public static final String LOAD_GROUP_GROUP_ID = "group_id";
     public static final String LOAD_REQUEST_REQUEST_ID = "request_id";
     public static final String CHAT_MESSAGE_FORWARD_SENDER = "sender";

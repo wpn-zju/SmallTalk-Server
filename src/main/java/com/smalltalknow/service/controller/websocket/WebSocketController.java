@@ -346,8 +346,8 @@ public class WebSocketController {
             messagingTemplate.convertAndSendToUser(DatabaseService.queryLastSessionById(userId),
                     ServerConstant.DIR_CONTACT_SYNC, buildContactMessage(contactId));
         } catch (UserNotExistsException e) {
-            logger.error("Unknown Error When Synchronizing - User not found!");
-            e.printStackTrace();
+            messagingTemplate.convertAndSendToUser(DatabaseService.queryLastSessionById(userId),
+                    ServerConstant.DIR_CONTACT_SYNC_FAILED_USER_NOT_FOUND, "Success");
         }
     }
 
@@ -358,8 +358,8 @@ public class WebSocketController {
                         ServerConstant.DIR_GROUP_SYNC, buildGroupMessage(groupId));
             }
         } catch (GroupNotExistsException e) {
-            logger.error("Unknown Error When Synchronizing - Group not found!");
-            e.printStackTrace();
+            messagingTemplate.convertAndSendToUser(DatabaseService.queryLastSessionById(userId),
+                    ServerConstant.DIR_GROUP_SYNC_FAILED_GROUP_NOT_FOUND, "Success");
         }
     }
 
@@ -370,8 +370,8 @@ public class WebSocketController {
                         ServerConstant.DIR_REQUEST_SYNC, buildRequestMessage(requestId));
             }
         } catch (RequestNotExistsException e) {
-            logger.error("Unknown Error When Synchronizing - Request not found!");
-            e.printStackTrace();
+            messagingTemplate.convertAndSendToUser(DatabaseService.queryLastSessionById(userId),
+                    ServerConstant.DIR_REQUEST_SYNC_FAILED_REQUEST_NOT_FOUND, "Success");
         }
     }
 
@@ -400,6 +400,29 @@ public class WebSocketController {
 
         try {
             sendContactInfo(DatabaseService.queryUserIdBySession(session), contactId);
+        } catch (SessionInvalidException e) {
+            messagingTemplate.convertAndSendToUser(session,
+                    ServerConstant.DIR_USER_SESSION_INVALID, "Success");
+        } catch (SessionExpiredException e) {
+            messagingTemplate.convertAndSendToUser(session,
+                    ServerConstant.DIR_USER_SESSION_EXPIRED, "Success");
+        } catch (SessionRevokedException e) {
+            messagingTemplate.convertAndSendToUser(session,
+                    ServerConstant.DIR_USER_SESSION_REVOKED, "Success");
+        }
+    }
+
+    @MessageMapping(ClientConstant.API_LOAD_CONTACT_BY_EMAIL)
+    public void loadContactByEmail(SimpMessageHeaderAccessor sha, LoadContactByEmailMessage message) {
+        String session = Objects.requireNonNull(sha.getUser()).getName();
+        String contactEmail = message.getContactEmail();
+
+        try {
+            int contactId = DatabaseService.queryUserIdByEmail(contactEmail);
+            sendContactInfo(DatabaseService.queryUserIdBySession(session), contactId);
+        } catch (UserEmailNotExistsException e) {
+            messagingTemplate.convertAndSendToUser(session,
+                    ServerConstant.DIR_CONTACT_SYNC_FAILED_USER_NOT_FOUND, "Success");
         } catch (SessionInvalidException e) {
             messagingTemplate.convertAndSendToUser(session,
                     ServerConstant.DIR_USER_SESSION_INVALID, "Success");
