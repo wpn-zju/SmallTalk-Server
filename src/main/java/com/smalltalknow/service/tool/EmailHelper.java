@@ -4,7 +4,7 @@ import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.JsonNode;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
-import com.smalltalknow.service.Credentials;
+import com.smalltalknow.service.SmallTalkCredentials;
 
 public class EmailHelper {
     private static final String DOMAIN = "service.smalltalknow.com";
@@ -19,7 +19,7 @@ public class EmailHelper {
 
     private static void sendEmail(String to, String subject, String content) throws UnirestException {
         HttpResponse<JsonNode> request = Unirest.post("https://api.mailgun.net/v3/" + DOMAIN + "/messages")
-                .basicAuth("api", Credentials.MAIL_API_KEY)
+                .basicAuth("api", SmallTalkCredentials.MAIL_API_KEY)
                 .queryString("from", "no-reply<no-reply@smalltalknow.com>")
                 .queryString("to", to)
                 .queryString("subject", subject)

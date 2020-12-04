@@ -5,34 +5,34 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-class Index {
-    private int value;
-    private int length;
-
-    public Index(int value, int length) {
-        this.value = value;
-        this.length = length;
-    }
-
-    public int intValue() {
-        return value;
-    }
-
-    public void increment() {
-        plus(1);
-    }
-
-    public void plus(int addend) {
-        if (value + addend > length) {
-            throw new JsonIOException();
-        } else {
-            value = value + addend;
-        }
-    }
-}
-
 @SuppressWarnings({"DuplicateBranchesInSwitch", "unused"})
 public class JsonObject {
+    static class Index {
+        private int value;
+        private int length;
+
+        public Index(int value, int length) {
+            this.value = value;
+            this.length = length;
+        }
+
+        public int intValue() {
+            return value;
+        }
+
+        public void increment() {
+            plus(1);
+        }
+
+        public void plus(int addend) {
+            if (value + addend > length) {
+                throw new JsonIOException();
+            } else {
+                value = value + addend;
+            }
+        }
+    }
+
     private JsonType jsonType;
     private Object object;
 
