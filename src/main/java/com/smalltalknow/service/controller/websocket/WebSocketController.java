@@ -462,7 +462,7 @@ public class WebSocketController {
         int requestId = message.getRequestId();
 
         try {
-            sendUserInfo(DatabaseService.queryUserIdBySession(session));
+            sendRequestInfo(DatabaseService.queryUserIdBySession(session), requestId);
         } catch (SessionInvalidException e) {
             messagingTemplate.convertAndSendToUser(session,
                     ServerConstant.DIR_USER_SESSION_INVALID, "Success");
@@ -590,6 +590,8 @@ public class WebSocketController {
                     DatabaseService.newContactConfirm(requestId, sender, receiver);
                     sendUserInfo(sender);
                     sendUserInfo(receiver);
+                    sendRequestInfo(sender, requestId);
+                    sendRequestInfo(receiver, requestId);
                 }
             } else {
                 messagingTemplate.convertAndSendToUser(session,
@@ -628,6 +630,8 @@ public class WebSocketController {
                     DatabaseService.newContactRefuse(requestId);
                     sendUserInfo(sender);
                     sendUserInfo(receiver);
+                    sendRequestInfo(sender, requestId);
+                    sendRequestInfo(receiver, requestId);
                 }
             } else {
                 messagingTemplate.convertAndSendToUser(session,
@@ -770,6 +774,8 @@ public class WebSocketController {
                     DatabaseService.newMemberConfirm(requestId, sender, groupId);
                     sendUserInfo(sender);
                     sendUserInfo(receiver);
+                    sendRequestInfo(sender, requestId);
+                    sendRequestInfo(receiver, requestId);
                 }
             } else {
                 messagingTemplate.convertAndSendToUser(session,
@@ -812,6 +818,8 @@ public class WebSocketController {
                     DatabaseService.newMemberRefuse(requestId);
                     sendUserInfo(sender);
                     sendUserInfo(receiver);
+                    sendRequestInfo(sender, requestId);
+                    sendRequestInfo(receiver, requestId);
                 }
             } else {
                 messagingTemplate.convertAndSendToUser(session,

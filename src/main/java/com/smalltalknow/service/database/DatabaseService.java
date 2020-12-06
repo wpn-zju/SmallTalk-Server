@@ -689,7 +689,8 @@ public class DatabaseService {
     private static final Duration SESSION_EXPIRE_DURATION = Duration.ofDays(30);
     private static final String createSession = "insert into session_storage " +
             "(session_id, user_id, session_create_datetime, session_expire_datetime, session_status) " +
-            "values (?, ?, ?, ?, ?)";
+            "values (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE " +
+            "session_id = ?, user_id = ?, session_create_datetime =?, session_expire_datetime = ?, session_status = ?";
     private static final String updateLastSession = "update account set last_session = ? where user_id = ?";
     public static void updateSession(int userId, String session) {
         try (Connection con = DriverManager.getConnection(url, user, password);
@@ -707,10 +708,15 @@ public class DatabaseService {
                         revokePreviousSt.executeUpdate();
                     }
                     createSessionSt.setString(1, session);
+                    createSessionSt.setString(6, session);
                     createSessionSt.setInt(2, userId);
+                    createSessionSt.setInt(7, userId);
                     createSessionSt.setTimestamp(3, Timestamp.from(Instant.now()));
+                    createSessionSt.setTimestamp(8, Timestamp.from(Instant.now()));
                     createSessionSt.setTimestamp(4, Timestamp.from(Instant.now().plus(SESSION_EXPIRE_DURATION)));
+                    createSessionSt.setTimestamp(9, Timestamp.from(Instant.now().plus(SESSION_EXPIRE_DURATION)));
                     createSessionSt.setString(5, EnumSessionStatus.SESSION_STATUS_VALID.toString());
+                    createSessionSt.setString(10, EnumSessionStatus.SESSION_STATUS_VALID.toString());
                     createSessionSt.executeUpdate();
                     updatePreviousSessionSt.setString(1, session);
                     updatePreviousSessionSt.setInt(2, userId);
