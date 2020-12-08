@@ -10,9 +10,9 @@ import lombok.Setter;
 @Getter
 @Setter
 @AllArgsConstructor(onConstructor = @__(@JsonCreator))
-public class GroupCreateRequestMessage {
-    @JsonProperty(ClientConstant.CHAT_GROUP_CREATE_REQUEST_GROUP_NAME)
-    private final String groupName;
-    @JsonProperty(ClientConstant.CHAT_GROUP_CREATE_REQUEST_MEMBER_LIST)
-    private final String memberList;
+public class GroupInviteMemberMessage {
+    @JsonProperty(ClientConstant.CHAT_GROUP_INVITE_MEMBER_GROUP_ID)
+    private final int groupId;
+    @JsonProperty(ClientConstant.CHAT_GROUP_INVITE_MEMBER_MEMBER_ID)
+    private final int memberId;
 }

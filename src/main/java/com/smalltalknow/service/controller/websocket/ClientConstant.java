@@ -22,6 +22,7 @@ public final class ClientConstant {
     public static final String API_CHAT_CONTACT_ADD_REFUSE = "/chat/contact_add_refuse";
     public static final String API_CHAT_GROUP_CREATE_REQUEST = "/chat/group_create_request";
     public static final String API_CHAT_GROUP_MODIFY_NAME = "/chat/group_modify_name";
+    public static final String API_CHAT_GROUP_INVITE_MEMBER = "/chat/group_invite_member";
     public static final String API_CHAT_GROUP_ADD_REQUEST = "/chat/group_add_request";
     public static final String API_CHAT_GROUP_ADD_CONFIRM = "/chat/group_add_confirm";
     public static final String API_CHAT_GROUP_ADD_REFUSE = "/chat/group_add_refuse";
@@ -57,8 +58,11 @@ public final class ClientConstant {
     public static final String CHAT_CONTACT_ADD_CONFIRM_REQUEST_ID = "request_id";
     public static final String CHAT_CONTACT_ADD_REFUSE_REQUEST_ID = "request_id";
     public static final String CHAT_GROUP_CREATE_REQUEST_GROUP_NAME = "group_name";
+    public static final String CHAT_GROUP_CREATE_REQUEST_MEMBER_LIST = "member_list";
     public static final String CHAT_GROUP_MODIFY_NAME_GROUP_ID = "group_id";
     public static final String CHAT_GROUP_MODIFY_NAME_NEW_GROUP_NAME = "new_group_name";
+    public static final String CHAT_GROUP_INVITE_MEMBER_GROUP_ID = "group_id";
+    public static final String CHAT_GROUP_INVITE_MEMBER_MEMBER_ID = "member_id";
     public static final String CHAT_GROUP_ADD_REQUEST_GROUP_ID = "group_id";
     public static final String CHAT_GROUP_ADD_CONFIRM_REQUEST_ID = "request_id";
     public static final String CHAT_GROUP_ADD_REFUSE_REQUEST_ID = "request_id";

@@ -1,5 +1,6 @@
 package com.smalltalknow.service.controller.websocket;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mashape.unirest.http.exceptions.UnirestException;
 import com.smalltalknow.service.controller.enums.EnumRequestStatus;
@@ -659,13 +660,15 @@ public class WebSocketController {
 
         try {
             PatternChecker.checkGroupName(groupName);
-
+            int[] memberList = new ObjectMapper().readValue(message.getMemberList(), int[].class);
             int userId = DatabaseService.queryUserIdBySession(session);
             int groupId = DatabaseService.newGroup(userId);
             DatabaseService.modifyGroupName(groupId, groupName);
-            messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_GROUP_CREATE_REQUEST_SUCCESS, String.format("{\"group_id\":%s}", groupId));
+            for (int i : memberList) { DatabaseService.newMember(groupId, i); }
             sendUserInfo(userId);
+            for (int i : memberList) { sendUserInfo(i); }
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
         } catch (SessionInvalidException e) {
             messagingTemplate.convertAndSendToUser(session,
                     ServerConstant.DIR_USER_SESSION_INVALID, "Success");
@@ -718,6 +721,39 @@ public class WebSocketController {
         } catch (InvalidGroupNameException e) {
             messagingTemplate.convertAndSendToUser(session,
                     ServerConstant.DIR_INVALID_GROUP_NAME, "Success");
+        }
+    }
+
+    @MessageMapping(ClientConstant.API_CHAT_GROUP_INVITE_MEMBER)
+    public void groupInviteMember(SimpMessageHeaderAccessor sha, GroupInviteMemberMessage message) {
+        String session = Objects.requireNonNull(sha.getUser()).getName();
+        int groupId = message.getGroupId();
+        int memberId = message.getMemberId();
+
+        try {
+            UserInfo memberInfo = DatabaseService.getUserInfo(memberId);
+            int userId = DatabaseService.queryUserIdBySession(session);
+            if (!memberInfo.getGroupList().contains(groupId)
+                    && userId == DatabaseService.getGroupInfo(groupId).getGroupHostId()) {
+                DatabaseService.newMember(groupId, memberId);
+                sendUserInfo(userId);
+                sendUserInfo(memberId);
+            }
+        } catch (UserNotExistsException e) {
+            logger.error("Group Invite Failed - Member ID not exists!");
+            e.printStackTrace();
+        } catch (GroupNotExistsException e) {
+            logger.error("Group Invite Failed - Unknown Error!");
+            e.printStackTrace();
+        } catch (SessionInvalidException e) {
+            messagingTemplate.convertAndSendToUser(session,
+                    ServerConstant.DIR_USER_SESSION_INVALID, "Success");
+        } catch (SessionExpiredException e) {
+            messagingTemplate.convertAndSendToUser(session,
+                    ServerConstant.DIR_USER_SESSION_EXPIRED, "Success");
+        } catch (SessionRevokedException e) {
+            messagingTemplate.convertAndSendToUser(session,
+                    ServerConstant.DIR_USER_SESSION_REVOKED, "Success");
         }
     }
 
