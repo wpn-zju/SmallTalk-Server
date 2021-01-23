@@ -10,7 +10,9 @@ import lombok.Setter;
 @Getter
 @Setter
 @AllArgsConstructor(onConstructor = @__(@JsonCreator))
-public class UserModifyPasswordMessage {
-    @JsonProperty(ClientConstant.USER_MODIFY_USER_PASSWORD_NEW_USER_PASSWORD)
-    private final String newUserPassword;
+public class LoadFileListMessage {
+    @JsonProperty(ClientConstant.LOAD_FILE_LIST_FIRST_SELECTOR)
+    private final int firstSelector;
+    @JsonProperty(ClientConstant.LOAD_FILE_LIST_SECOND_SELECTOR)
+    private final int secondSelector;
 }

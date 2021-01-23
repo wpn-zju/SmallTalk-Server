@@ -1,17 +1,19 @@
 package com.smalltalknow.service.database.model;
 
-import com.smalltalknow.service.tool.JsonObject;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.smalltalknow.service.controller.websocket.EntityConstant;
 import lombok.Builder;
 import lombok.Getter;
-
-import java.util.List;
 
 @Getter
 @Builder
 public class RequestInfo {
+    @JsonProperty(EntityConstant.REQUEST_INFO_REQUEST_ID)
     private final int requestId;
+    @JsonProperty(EntityConstant.REQUEST_INFO_REQUEST_STATUS)
     private final String requestStatus;
+    @JsonProperty(EntityConstant.REQUEST_INFO_REQUEST_TYPE)
     private final String requestType;
-    private final JsonObject requestMetadata;
-    private final List<Integer> visibleUserList;
+    @JsonProperty(EntityConstant.REQUEST_INFO_REQUEST_METADATA)
+    private final String requestMetadata;
 }

@@ -3,14 +3,13 @@ package com.smalltalknow.service.controller.websocket;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mashape.unirest.http.exceptions.UnirestException;
+import com.smalltalknow.service.controller.enums.EnumMessageType;
 import com.smalltalknow.service.controller.enums.EnumRequestStatus;
 import com.smalltalknow.service.controller.patterns.PatternChecker;
 import com.smalltalknow.service.controller.patterns.exceptions.*;
 import com.smalltalknow.service.database.DatabaseService;
 import com.smalltalknow.service.database.exception.*;
-import com.smalltalknow.service.database.model.GroupInfo;
-import com.smalltalknow.service.database.model.RequestInfo;
-import com.smalltalknow.service.database.model.UserInfo;
+import com.smalltalknow.service.database.model.*;
 import com.smalltalknow.service.message.*;
 import com.smalltalknow.service.tool.EmailHelper;
 import com.smalltalknow.service.tool.JsonObject;
@@ -23,10 +22,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collectors;
+import java.util.*;
 
 @Controller
 @SuppressWarnings("unused")
@@ -39,16 +35,25 @@ public class WebSocketController {
     private void proceedToSignIn(int userId, String session) {
         messagingTemplate.convertAndSendToUser(session,
                 ServerConstant.DIR_USER_SIGN_IN_SUCCESS, "Success");
-
-        DatabaseService.updateSession(userId, session);
-        DatabaseService.updateLoginRecord(userId);
-
-        sendUserInfo(userId);
-        DatabaseService.popOfflineMessageAsList(userId).forEach(m -> forwardMessage(session, m.toString()));
+        refreshSession(userId, session);
+        DatabaseService.popOfflineMessageAsList(userId).forEach(m -> {
+            String messageType = m.get("message_type").getString();
+            if (messageType.equals(EnumMessageType.MESSAGE_TYPE_PRIVATE.toString())) {
+                forwardMessage(session, m.get("content").toString());
+            } else if (messageType.equals(EnumMessageType.MESSAGE_TYPE_GROUP.toString())) {
+                forwardGroupMessage(session, m.get("content").toString());
+            } else {
+                logger.error("Unsupported Message");
+            }
+        });
     }
 
     private void forwardMessage(String session, String content) {
         messagingTemplate.convertAndSendToUser(session, ServerConstant.DIR_NEW_MESSAGE, content);
+    }
+
+    private void forwardGroupMessage(String session, String content) {
+        messagingTemplate.convertAndSendToUser(session, ServerConstant.DIR_NEW_GROUP_MESSAGE, content);
     }
 
     @MessageMapping(ClientConstant.API_USER_SIGN_UP)
@@ -95,6 +100,7 @@ public class WebSocketController {
         }
     }
 
+    // Support HTTP Version Soon
     @MessageMapping(ClientConstant.API_USER_SIGN_UP_PASSCODE_REQUEST)
     public void userSignUpPasscodeRequest(SimpMessageHeaderAccessor sha, UserSignUpPasscodeRequestMessage message) {
         String session = Objects.requireNonNull(sha.getUser()).getName();
@@ -126,6 +132,7 @@ public class WebSocketController {
         }
     }
 
+    // Support HTTP Version Soon
     @MessageMapping(ClientConstant.API_USER_RECOVER_PASSWORD)
     public void userRecoverPassword(SimpMessageHeaderAccessor sha, UserRecoverPasswordMessage message) {
         String session = Objects.requireNonNull(sha.getUser()).getName();
@@ -165,6 +172,7 @@ public class WebSocketController {
         }
     }
 
+    // Support HTTP Version Soon
     @MessageMapping(ClientConstant.API_USER_RECOVER_PASSWORD_PASSCODE_REQUEST)
     public void userRecoverPasswordPasscodeRequest(
             SimpMessageHeaderAccessor sha, UserRecoverPasswordPasscodeRequestMessage message) {
@@ -208,7 +216,7 @@ public class WebSocketController {
             PatternChecker.checkUserPassword(userPassword);
 
             int userId = DatabaseService.queryUserIdByEmail(userEmail);
-            UserInfo userInfo = DatabaseService.getUserInfo(userId);
+            UserInfo userInfo = DatabaseService.getUser(userId);
             if (userInfo.getUserPassword().equals(userPassword)) {
                 proceedToSignIn(userId, session);
             } else {
@@ -276,18 +284,41 @@ public class WebSocketController {
         }
     }
 
-    @MessageMapping(ClientConstant.API_USER_MODIFY_NAME)
-    public void userModifyName(SimpMessageHeaderAccessor sha, UserModifyNameMessage message) {
+    // Support HTTP Version Soon
+    // Todo: Add more checks
+    @MessageMapping(ClientConstant.API_USER_MODIFY_INFO)
+    public void userModifyInfo(SimpMessageHeaderAccessor sha, UserModifyInfoMessage message) {
         String session = Objects.requireNonNull(sha.getUser()).getName();
-        String newUserName = message.getNewUserName();
+        int userId = message.getUserId();
+        String userName = message.getUserName();
+        String userPassword = message.getUserPassword();
+        Integer userGender = message.getUserGender();
+        String userAvatarLink = message.getUserAvatarLink();
+        String userInfo = message.getUserInfo();
+        String userLocation = message.getUserLocation();
 
         try {
-            PatternChecker.checkUserName(newUserName);
-
-            int userId = DatabaseService.queryUserIdBySession(session);
-            DatabaseService.modifyUserName(userId, newUserName);
-            messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_MODIFY_NAME_SUCCESS, "Success");
+            if (userId != DatabaseService.queryUserIdBySession(session)) return;
+            if (userName != null) {
+                PatternChecker.checkUserName(userName);
+                DatabaseService.modifyUserName(userId, userName);
+            }
+            if (userPassword != null) {
+                PatternChecker.checkUserPassword(userPassword);
+                DatabaseService.modifyUserPassword(userId, userPassword);
+            }
+            if (userGender != null) {
+                DatabaseService.modifyUserGender(userId, userGender);
+            }
+            if (userAvatarLink != null) {
+                DatabaseService.modifyUserAvatarLink(userId, userAvatarLink);
+            }
+            if (userInfo != null) {
+                DatabaseService.modifyUserInfo(userId, userInfo);
+            }
+            if (userLocation != null) {
+                DatabaseService.modifyUserLocation(userId, userLocation);
+            }
             sendUserInfo(userId);
         } catch (SessionInvalidException e) {
             messagingTemplate.convertAndSendToUser(session,
@@ -301,22 +332,38 @@ public class WebSocketController {
         } catch (InvalidUserNameException e) {
             messagingTemplate.convertAndSendToUser(session,
                     ServerConstant.DIR_INVALID_USER_NAME, "Success");
+        } catch (InvalidUserPasswordException e) {
+            messagingTemplate.convertAndSendToUser(session,
+                    ServerConstant.DIR_INVALID_USER_PASSWORD, "Success");
         }
     }
 
-    @MessageMapping(ClientConstant.API_USER_MODIFY_PASSWORD)
-    public void userModifyPassword(SimpMessageHeaderAccessor sha, UserModifyPasswordMessage message) {
+    // Support HTTP Version Soon
+    // Todo: Add more checks
+    @MessageMapping(ClientConstant.API_GROUP_MODIFY_INFO)
+    public void groupModifyInfo(SimpMessageHeaderAccessor sha, GroupModifyInfoMessage message) {
         String session = Objects.requireNonNull(sha.getUser()).getName();
-        String newUserPassword = message.getNewUserPassword();
+        int groupId = message.getGroupId();
+        String groupName = message.getGroupName();
+        String groupInfo = message.getGroupInfo();
+        String groupAvatarLink = message.getGroupAvatarLink();
 
         try {
-            PatternChecker.checkUserPassword(newUserPassword);
-
             int userId = DatabaseService.queryUserIdBySession(session);
-            DatabaseService.modifyUserPassword(userId, newUserPassword);
-            messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_MODIFY_PASSWORD_SUCCESS, "Success");
-            sendUserInfo(userId);
+            if (!isGroupHost(userId, groupId)) return;
+            if (groupName != null) {
+                PatternChecker.checkGroupName(groupName);
+                DatabaseService.modifyGroupName(groupId, groupName);
+            }
+            if (groupInfo != null) {
+                DatabaseService.modifyGroupInfo(groupId, groupInfo);
+            }
+            if (groupAvatarLink != null) {
+                DatabaseService.modifyGroupAvatarLink(groupId, groupAvatarLink);
+            }
+            sendGroupInfo(userId, groupId);
+        } catch (GroupNotExistsException e) {
+            e.printStackTrace();
         } catch (SessionInvalidException e) {
             messagingTemplate.convertAndSendToUser(session,
                     ServerConstant.DIR_USER_SESSION_INVALID, "Success");
@@ -326,9 +373,9 @@ public class WebSocketController {
         } catch (SessionRevokedException e) {
             messagingTemplate.convertAndSendToUser(session,
                     ServerConstant.DIR_USER_SESSION_REVOKED, "Success");
-        } catch (InvalidUserPasswordException e) {
+        } catch (InvalidGroupNameException e) {
             messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_INVALID_USER_PASSWORD, "Success");
+                    ServerConstant.DIR_INVALID_GROUP_NAME, "Success");
         }
     }
 
@@ -338,6 +385,8 @@ public class WebSocketController {
                 messagingTemplate.convertAndSendToUser(DatabaseService.queryLastSessionById(userId),
                         ServerConstant.DIR_USER_SYNC, buildUserMessage(userId));
             }
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
         } catch (UserNotExistsException e) {
             logger.error("Unknown Error When Synchronizing - User not found!");
             e.printStackTrace();
@@ -348,6 +397,8 @@ public class WebSocketController {
         try {
             messagingTemplate.convertAndSendToUser(DatabaseService.queryLastSessionById(userId),
                     ServerConstant.DIR_CONTACT_SYNC, buildContactMessage(contactId));
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
         } catch (UserNotExistsException e) {
             messagingTemplate.convertAndSendToUser(DatabaseService.queryLastSessionById(userId),
                     ServerConstant.DIR_CONTACT_SYNC_FAILED_USER_NOT_FOUND, "Success");
@@ -360,6 +411,8 @@ public class WebSocketController {
                 messagingTemplate.convertAndSendToUser(DatabaseService.queryLastSessionById(userId),
                         ServerConstant.DIR_GROUP_SYNC, buildGroupMessage(groupId));
             }
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
         } catch (GroupNotExistsException e) {
             messagingTemplate.convertAndSendToUser(DatabaseService.queryLastSessionById(userId),
                     ServerConstant.DIR_GROUP_SYNC_FAILED_GROUP_NOT_FOUND, "Success");
@@ -372,18 +425,24 @@ public class WebSocketController {
                 messagingTemplate.convertAndSendToUser(DatabaseService.queryLastSessionById(userId),
                         ServerConstant.DIR_REQUEST_SYNC, buildRequestMessage(requestId));
             }
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
         } catch (RequestNotExistsException e) {
             messagingTemplate.convertAndSendToUser(DatabaseService.queryLastSessionById(userId),
                     ServerConstant.DIR_REQUEST_SYNC_FAILED_REQUEST_NOT_FOUND, "Success");
         }
     }
 
+    // Support HTTP Version Soon
     @MessageMapping(ClientConstant.API_LOAD_USER)
     public void loadUser(SimpMessageHeaderAccessor sha, LoadUserMessage message) {
         String session = Objects.requireNonNull(sha.getUser()).getName();
+        int userId = message.getUserId();
 
         try {
-            sendUserInfo(DatabaseService.queryUserIdBySession(session));
+            if (userId == DatabaseService.queryUserIdBySession(session)) {
+                sendUserInfo(DatabaseService.queryUserIdBySession(session));
+            }
         } catch (SessionInvalidException e) {
             messagingTemplate.convertAndSendToUser(session,
                     ServerConstant.DIR_USER_SESSION_INVALID, "Success");
@@ -396,6 +455,7 @@ public class WebSocketController {
         }
     }
 
+    // Support HTTP Version Soon
     @MessageMapping(ClientConstant.API_LOAD_CONTACT)
     public void loadContact(SimpMessageHeaderAccessor sha, LoadContactMessage message) {
         String session = Objects.requireNonNull(sha.getUser()).getName();
@@ -415,6 +475,7 @@ public class WebSocketController {
         }
     }
 
+    // Support HTTP Version Soon
     @MessageMapping(ClientConstant.API_LOAD_CONTACT_BY_EMAIL)
     public void loadContactByEmail(SimpMessageHeaderAccessor sha, LoadContactByEmailMessage message) {
         String session = Objects.requireNonNull(sha.getUser()).getName();
@@ -438,6 +499,7 @@ public class WebSocketController {
         }
     }
 
+    // Support HTTP Version Soon
     @MessageMapping({ClientConstant.API_LOAD_GROUP})
     public void loadGroup(SimpMessageHeaderAccessor sha, LoadGroupMessage message) {
         String session = Objects.requireNonNull(sha.getUser()).getName();
@@ -457,6 +519,7 @@ public class WebSocketController {
         }
     }
 
+    // Support HTTP Version Soon
     @MessageMapping(ClientConstant.API_LOAD_REQUEST)
     public void loadRequest(SimpMessageHeaderAccessor sha, LoadRequestMessage message) {
         String session = Objects.requireNonNull(sha.getUser()).getName();
@@ -476,6 +539,16 @@ public class WebSocketController {
         }
     }
 
+    @MessageMapping(ClientConstant.API_LOAD_FILE_LIST)
+    public void loadFileList(SimpMessageHeaderAccessor sha, LoadFileListMessage message) throws Exception {
+        String session = Objects.requireNonNull(sha.getUser()).getName();
+        int firstSelector = message.getFirstSelector();
+        int secondSelector = message.getSecondSelector();
+        List<FileInfo> fileList = DatabaseService.getFileList(firstSelector, secondSelector);
+        messagingTemplate.convertAndSendToUser(
+                session, ServerConstant.DIR_FILE_LIST_SYNC, new ObjectMapper().writeValueAsString(fileList));
+    }
+
     @MessageMapping(ClientConstant.API_CHAT_MESSAGE_FORWARD)
     public void messageForward(SimpMessageHeaderAccessor sha, MessageForwardMessage message) {
         String session = Objects.requireNonNull(sha.getUser()).getName();
@@ -488,12 +561,12 @@ public class WebSocketController {
                 if (DatabaseService.isOnline(sender)) {
                     forwardMessage(session, messageSerialized);
                 } else {
-                    DatabaseService.pushOfflineMessage(sender, messageSerialized);
+                    DatabaseService.pushOfflineMessage(sender, messageSerialized, EnumMessageType.MESSAGE_TYPE_PRIVATE);
                 }
                 if (DatabaseService.isOnline(receiver)) {
                     forwardMessage(DatabaseService.queryLastSessionById(receiver), messageSerialized);
                 } else {
-                    DatabaseService.pushOfflineMessage(receiver, messageSerialized);
+                    DatabaseService.pushOfflineMessage(receiver, messageSerialized, EnumMessageType.MESSAGE_TYPE_PRIVATE);
                 }
             } else {
                 messagingTemplate.convertAndSendToUser(session,
@@ -513,13 +586,13 @@ public class WebSocketController {
 
         try {
             if (DatabaseService.checkSession(sender, session)) {
-                GroupInfo groupInfo = DatabaseService.getGroupInfo(receiver);
+                GroupInfo groupInfo = DatabaseService.getGroup(receiver);
                 String messageSerialized = new ObjectMapper().writeValueAsString(message);
                 for (int memberId : groupInfo.getMemberList()) {
                     if (DatabaseService.isOnline(memberId)) {
-                        forwardMessage(DatabaseService.queryLastSessionById(memberId), messageSerialized);
+                        forwardGroupMessage(DatabaseService.queryLastSessionById(memberId), messageSerialized);
                     } else {
-                        DatabaseService.pushOfflineMessage(memberId, messageSerialized);
+                        DatabaseService.pushOfflineMessage(memberId, messageSerialized, EnumMessageType.MESSAGE_TYPE_GROUP);
                     }
                 }
             } else {
@@ -573,17 +646,57 @@ public class WebSocketController {
         }
     }
 
+    @MessageMapping(ClientConstant.API_CHAT_CONTACT_ADD_REVOKE)
+    public void contactAddRevoke(SimpMessageHeaderAccessor sha, ContactAddRevokeMessage message) {
+        String session = Objects.requireNonNull(sha.getUser()).getName();
+        int requestId = message.getRequestId();
+
+        try {
+            RequestInfo requestInfo = DatabaseService.getRequest(requestId);
+            if (requestInfo.getRequestType().equals(RequestConstant.REQUEST_CONTACT_ADD)
+                    || requestInfo.getRequestStatus().equals(EnumRequestStatus.REQUEST_STATUS_PENDING.toString())) {
+                JsonObject metadata = JsonObject.create(requestInfo.getRequestMetadata());
+                int sender = metadata.get(RequestConstant.REQUEST_CONTACT_ADD_SENDER).getInt();
+                int receiver = metadata.get(RequestConstant.REQUEST_CONTACT_ADD_RECEIVER).getInt();
+                int userId = DatabaseService.queryUserIdBySession(session);
+                if (sender == userId) {
+                    DatabaseService.newContactRevoke(requestId);
+                    sendUserInfo(sender);
+                    sendUserInfo(receiver);
+                    sendRequestInfo(sender, requestId);
+                    sendRequestInfo(receiver, requestId);
+                }
+            } else {
+                messagingTemplate.convertAndSendToUser(session,
+                        ServerConstant.DIR_REQUEST_NOT_FOUND, "Success");
+            }
+        } catch (RequestNotExistsException e) {
+            messagingTemplate.convertAndSendToUser(session,
+                    ServerConstant.DIR_REQUEST_NOT_FOUND, "Success");
+        } catch (SessionInvalidException e) {
+            messagingTemplate.convertAndSendToUser(session,
+                    ServerConstant.DIR_USER_SESSION_INVALID, "Success");
+        } catch (SessionExpiredException e) {
+            messagingTemplate.convertAndSendToUser(session,
+                    ServerConstant.DIR_USER_SESSION_EXPIRED, "Success");
+        } catch (SessionRevokedException e) {
+            messagingTemplate.convertAndSendToUser(session,
+                    ServerConstant.DIR_USER_SESSION_REVOKED, "Success");
+        }
+    }
+
     @MessageMapping(ClientConstant.API_CHAT_CONTACT_ADD_CONFIRM)
     public void contactAddConfirm(SimpMessageHeaderAccessor sha, ContactAddConfirmMessage message) {
         String session = Objects.requireNonNull(sha.getUser()).getName();
         int requestId = message.getRequestId();
 
         try {
-            RequestInfo requestInfo = DatabaseService.getRequestInfo(requestId);
+            RequestInfo requestInfo = DatabaseService.getRequest(requestId);
             if (requestInfo.getRequestType().equals(RequestConstant.REQUEST_CONTACT_ADD)
                     || requestInfo.getRequestStatus().equals(EnumRequestStatus.REQUEST_STATUS_PENDING.toString())) {
-                int sender = requestInfo.getRequestMetadata().get(RequestConstant.REQUEST_CONTACT_ADD_SENDER).getInt();
-                int receiver = requestInfo.getRequestMetadata().get(RequestConstant.REQUEST_CONTACT_ADD_RECEIVER).getInt();
+                JsonObject metadata = JsonObject.create(requestInfo.getRequestMetadata());
+                int sender = metadata.get(RequestConstant.REQUEST_CONTACT_ADD_SENDER).getInt();
+                int receiver = metadata.get(RequestConstant.REQUEST_CONTACT_ADD_RECEIVER).getInt();
                 int userId = DatabaseService.queryUserIdBySession(session);
                 if (receiver == userId
                         && !DatabaseService.isFriend(sender, receiver)
@@ -619,11 +732,12 @@ public class WebSocketController {
         int requestId = message.getRequestId();
 
         try {
-            RequestInfo requestInfo = DatabaseService.getRequestInfo(requestId);
+            RequestInfo requestInfo = DatabaseService.getRequest(requestId);
             if (requestInfo.getRequestType().equals(RequestConstant.REQUEST_CONTACT_ADD)
                     || requestInfo.getRequestStatus().equals(EnumRequestStatus.REQUEST_STATUS_PENDING.toString())) {
-                int sender = requestInfo.getRequestMetadata().get(RequestConstant.REQUEST_CONTACT_ADD_SENDER).getInt();
-                int receiver = requestInfo.getRequestMetadata().get(RequestConstant.REQUEST_CONTACT_ADD_RECEIVER).getInt();
+                JsonObject metadata = JsonObject.create(requestInfo.getRequestMetadata());
+                int sender = metadata.get(RequestConstant.REQUEST_CONTACT_ADD_SENDER).getInt();
+                int receiver = metadata.get(RequestConstant.REQUEST_CONTACT_ADD_RECEIVER).getInt();
                 int userId = DatabaseService.queryUserIdBySession(session);
                 if (receiver == userId
                         && !DatabaseService.isFriend(sender, receiver)
@@ -685,43 +799,7 @@ public class WebSocketController {
     }
 
     private boolean isGroupHost(int userId, int groupId) throws GroupNotExistsException {
-        return DatabaseService.getGroupInfo(groupId).getGroupHostId() == userId;
-    }
-
-    @MessageMapping(ClientConstant.API_CHAT_GROUP_MODIFY_NAME)
-    public void groupModifyName(SimpMessageHeaderAccessor sha, GroupModifyNameMessage message) {
-        String session = Objects.requireNonNull(sha.getUser()).getName();
-        int groupId = message.getGroupId();
-        String newGroupName = message.getNewGroupName();
-
-        try {
-            PatternChecker.checkGroupName(newGroupName);
-
-            int userId = DatabaseService.queryUserIdBySession(session);
-            if (isGroupHost(userId, groupId)) {
-                DatabaseService.modifyGroupName(groupId, newGroupName);
-                messagingTemplate.convertAndSendToUser(session,
-                        ServerConstant.DIR_GROUP_MODIFY_NAME_SUCCESS, "Success");
-            } else {
-                messagingTemplate.convertAndSendToUser(session,
-                        ServerConstant.DIR_GROUP_MODIFY_NAME_FAILED_PERMISSION_DENIED, "Success");
-            }
-        } catch (GroupNotExistsException e) {
-            messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_GROUP_MODIFY_NAME_FAILED_GROUP_NOT_FOUND, "Success");
-        } catch (SessionInvalidException e) {
-            messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SESSION_INVALID, "Success");
-        } catch (SessionExpiredException e) {
-            messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SESSION_EXPIRED, "Success");
-        } catch (SessionRevokedException e) {
-            messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_USER_SESSION_REVOKED, "Success");
-        } catch (InvalidGroupNameException e) {
-            messagingTemplate.convertAndSendToUser(session,
-                    ServerConstant.DIR_INVALID_GROUP_NAME, "Success");
-        }
+        return DatabaseService.getGroup(groupId).getGroupHostId() == userId;
     }
 
     @MessageMapping(ClientConstant.API_CHAT_GROUP_INVITE_MEMBER)
@@ -731,10 +809,10 @@ public class WebSocketController {
         int memberId = message.getMemberId();
 
         try {
-            UserInfo memberInfo = DatabaseService.getUserInfo(memberId);
+            UserInfo memberInfo = DatabaseService.getUser(memberId);
             int userId = DatabaseService.queryUserIdBySession(session);
             if (!memberInfo.getGroupList().contains(groupId)
-                    && userId == DatabaseService.getGroupInfo(groupId).getGroupHostId()) {
+                    && isGroupHost(userId, groupId)) {
                 DatabaseService.newMember(groupId, memberId);
                 sendUserInfo(userId);
                 sendUserInfo(memberId);
@@ -768,7 +846,7 @@ public class WebSocketController {
                 messagingTemplate.convertAndSendToUser(session,
                         ServerConstant.DIR_GROUP_ADD_REQUEST_FAILED_ALREADY_MEMBER, "Success");
             } else {
-                GroupInfo groupInfo = DatabaseService.getGroupInfo(groupId);
+                GroupInfo groupInfo = DatabaseService.getGroup(groupId);
                 int hostId = groupInfo.getGroupHostId();
                 int requestId = DatabaseService.newMemberRequest(userId, groupId, hostId);
                 messagingTemplate.convertAndSendToUser(session,
@@ -791,22 +869,63 @@ public class WebSocketController {
         }
     }
 
+    @MessageMapping(ClientConstant.API_CHAT_GROUP_ADD_REVOKE)
+    public void groupAddRevoke(SimpMessageHeaderAccessor sha, GroupAddRevokeMessage message) {
+        String session = Objects.requireNonNull(sha.getUser()).getName();
+        int requestId = message.getRequestId();
+
+        try {
+            RequestInfo requestInfo = DatabaseService.getRequest(requestId);
+            if (requestInfo.getRequestType().equals(RequestConstant.REQUEST_GROUP_ADD)
+                    || requestInfo.getRequestStatus().equals(EnumRequestStatus.REQUEST_STATUS_PENDING.toString())) {
+                JsonObject metadata = JsonObject.create(requestInfo.getRequestMetadata());
+                int sender = metadata.get(RequestConstant.REQUEST_GROUP_ADD_SENDER).getInt();
+                int receiver = metadata.get(RequestConstant.REQUEST_GROUP_ADD_RECEIVER).getInt();
+                int groupId = metadata.get(RequestConstant.REQUEST_GROUP_ADD_GROUP_ID).getInt();
+                int userId = DatabaseService.queryUserIdBySession(session);
+                if (sender == userId) {
+                    DatabaseService.newMemberRevoke(requestId);
+                    sendUserInfo(sender);
+                    sendUserInfo(receiver);
+                    sendRequestInfo(sender, requestId);
+                    sendRequestInfo(receiver, requestId);
+                }
+            } else {
+                messagingTemplate.convertAndSendToUser(session,
+                        ServerConstant.DIR_REQUEST_NOT_FOUND, "Success");
+            }
+        } catch (RequestNotExistsException e) {
+            messagingTemplate.convertAndSendToUser(session,
+                    ServerConstant.DIR_REQUEST_NOT_FOUND, "Success");
+        } catch (SessionInvalidException e) {
+            messagingTemplate.convertAndSendToUser(session,
+                    ServerConstant.DIR_USER_SESSION_INVALID, "Success");
+        } catch (SessionExpiredException e) {
+            messagingTemplate.convertAndSendToUser(session,
+                    ServerConstant.DIR_USER_SESSION_EXPIRED, "Success");
+        } catch (SessionRevokedException e) {
+            messagingTemplate.convertAndSendToUser(session,
+                    ServerConstant.DIR_USER_SESSION_REVOKED, "Success");
+        }
+    }
+
     @MessageMapping(ClientConstant.API_CHAT_GROUP_ADD_CONFIRM)
     public void groupAddConfirm(SimpMessageHeaderAccessor sha, GroupAddConfirmMessage message) {
         String session = Objects.requireNonNull(sha.getUser()).getName();
         int requestId = message.getRequestId();
 
         try {
-            RequestInfo requestInfo = DatabaseService.getRequestInfo(requestId);
+            RequestInfo requestInfo = DatabaseService.getRequest(requestId);
             if (requestInfo.getRequestType().equals(RequestConstant.REQUEST_GROUP_ADD)
                     || requestInfo.getRequestStatus().equals(EnumRequestStatus.REQUEST_STATUS_PENDING.toString())) {
-                int sender = requestInfo.getRequestMetadata().get(RequestConstant.REQUEST_GROUP_ADD_SENDER).getInt();
-                int receiver = requestInfo.getRequestMetadata().get(RequestConstant.REQUEST_GROUP_ADD_RECEIVER).getInt();
-                int groupId = requestInfo.getRequestMetadata().get(RequestConstant.REQUEST_GROUP_ADD_GROUP_ID).getInt();
+                JsonObject metadata = JsonObject.create(requestInfo.getRequestMetadata());
+                int sender = metadata.get(RequestConstant.REQUEST_GROUP_ADD_SENDER).getInt();
+                int receiver = metadata.get(RequestConstant.REQUEST_GROUP_ADD_RECEIVER).getInt();
+                int groupId = metadata.get(RequestConstant.REQUEST_GROUP_ADD_GROUP_ID).getInt();
                 int userId = DatabaseService.queryUserIdBySession(session);
                 if (receiver == userId
                         && !DatabaseService.isMember(groupId, sender)
-                        && receiver == DatabaseService.getGroupInfo(groupId).getGroupHostId()) {
+                        && isGroupHost(receiver, groupId)) {
                     DatabaseService.newMemberConfirm(requestId, sender, groupId);
                     sendUserInfo(sender);
                     sendUserInfo(receiver);
@@ -841,16 +960,17 @@ public class WebSocketController {
         int requestId = message.getRequestId();
 
         try {
-            RequestInfo requestInfo = DatabaseService.getRequestInfo(requestId);
+            RequestInfo requestInfo = DatabaseService.getRequest(requestId);
             if (requestInfo.getRequestType().equals(RequestConstant.REQUEST_GROUP_ADD)
                     || requestInfo.getRequestStatus().equals(EnumRequestStatus.REQUEST_STATUS_PENDING.toString())) {
-                int sender = requestInfo.getRequestMetadata().get(RequestConstant.REQUEST_GROUP_ADD_SENDER).getInt();
-                int receiver = requestInfo.getRequestMetadata().get(RequestConstant.REQUEST_GROUP_ADD_RECEIVER).getInt();
-                int groupId = requestInfo.getRequestMetadata().get(RequestConstant.REQUEST_GROUP_ADD_GROUP_ID).getInt();
+                JsonObject metadata = JsonObject.create(requestInfo.getRequestMetadata());
+                int sender = metadata.get(RequestConstant.REQUEST_GROUP_ADD_SENDER).getInt();
+                int receiver = metadata.get(RequestConstant.REQUEST_GROUP_ADD_RECEIVER).getInt();
+                int groupId = metadata.get(RequestConstant.REQUEST_GROUP_ADD_GROUP_ID).getInt();
                 int userId = DatabaseService.queryUserIdBySession(session);
                 if (receiver == userId
                         && !DatabaseService.isMember(groupId, sender)
-                        && receiver == DatabaseService.getGroupInfo(groupId).getGroupHostId()) {
+                        && isGroupHost(receiver, groupId)) {
                     DatabaseService.newMemberRefuse(requestId);
                     sendUserInfo(sender);
                     sendUserInfo(receiver);
@@ -879,102 +999,153 @@ public class WebSocketController {
         }
     }
 
-    @MessageMapping(ClientConstant.API_CHAT_WEBRTC_CALL)
-    public void webrtcCall(SimpMessageHeaderAccessor sha, WebRTCCallMessage message) {
+    @MessageMapping(ClientConstant.API_USER_REPLACE_SESSION)
+    public void userSessionReplace(SimpMessageHeaderAccessor sha, UserSessionReplaceMessage message) {
         String session = Objects.requireNonNull(sha.getUser()).getName();
-        int sender = message.getSender();
-        int receiver = message.getReceiver();
-        String command = message.getWebRTCCommand();
-        String sessionDescription = message.getWebRTCSessionDescription();
+        String oldSession = message.getOldSession();
 
         try {
-            if (DatabaseService.checkSession(sender, session)) {
-                String messageSerialized = new ObjectMapper().writeValueAsString(message);
-                switch (command) {
-                    case VideoCommands.WEBRTC_COMMAND_REQUEST:
-                        if (DatabaseService.isOnline(receiver)) {
-                            messagingTemplate.convertAndSendToUser(DatabaseService.queryLastSessionById(receiver),
-                                    ServerConstant.DIR_WEBRTC_CALL, messageSerialized);
-                        } else {
-                            Map<String, JsonObject> refuseResponseMap = new HashMap<>();
-                            refuseResponseMap.put(ServerConstant.CHAT_WEBRTC_CALL__SENDER, new JsonObject(receiver));
-                            refuseResponseMap.put(ServerConstant.CHAT_WEBRTC_CALL__RECEIVER, new JsonObject(sender));
-                            refuseResponseMap.put(ServerConstant.CHAT_WEBRTC_CALL__WEBRTC_COMMAND,
-                                    new JsonObject(VideoCommands.WEBRTC_COMMAND_REFUSE));
-                            messagingTemplate.convertAndSendToUser(session,
-                                    ServerConstant.DIR_WEBRTC_CALL, new JsonObject(refuseResponseMap).toString());
-                        }
-                        break;
-                    case VideoCommands.WEBRTC_COMMAND_ACCEPT:
-                    case VideoCommands.WEBRTC_COMMAND_REFUSE:
-                    case VideoCommands.WEBRTC_COMMAND_CALL:
-                    case VideoCommands.WEBRTC_COMMAND_ANSWER:
-                    case VideoCommands.WEBRTC_COMMAND_CANDIDATE:
-                    default:
-                        if (DatabaseService.isOnline(receiver)) {
-                            messagingTemplate.convertAndSendToUser(DatabaseService.queryLastSessionById(receiver),
-                                    ServerConstant.DIR_WEBRTC_CALL, messageSerialized);
-                        }
-                        break;
-                }
-            } else {
-                messagingTemplate.convertAndSendToUser(session,
-                        ServerConstant.DIR_USER_SESSION_EXPIRED, "Success");
-            }
-        } catch (IOException e) {
-            logger.error("WebRTC Call Failed - IOException");
-            e.printStackTrace();
+            PatternChecker.checkSessionToken(oldSession);
+            int userId = DatabaseService.queryUserIdBySession(oldSession);
+            refreshSession(userId, session);
+        } catch (InvalidSessionException e) {
+            logger.info("Replace Session Failed");
+        } catch (SessionInvalidException e) {
+            messagingTemplate.convertAndSendToUser(session,
+                    ServerConstant.DIR_USER_SESSION_INVALID, "Success");
+        } catch (SessionExpiredException e) {
+            messagingTemplate.convertAndSendToUser(session,
+                    ServerConstant.DIR_USER_SESSION_EXPIRED, "Success");
+        } catch (SessionRevokedException e) {
+            messagingTemplate.convertAndSendToUser(session,
+                    ServerConstant.DIR_USER_SESSION_REVOKED, "Success");
         }
     }
 
+    public void refreshSession(int userId, String session) {
+        DatabaseService.updateSession(userId, session);
+        DatabaseService.updateLoginRecord(userId);
+        sendUserInfo(userId);
+    }
+
+    public void cleanUser(int userId) {
+        exitVideoChatRoom(userId);
+    }
+
+    private void enterVideoChatRoom(int userId, String channel) {
+        logger.info("User " + userId + " enters the chat room.");
+        if (userToChannel.containsKey(userId)) {
+            String lastChannel = userToChannel.get(userId);
+            Set<Integer> lastChannelMembers = channelMap.get(lastChannel);
+            lastChannelMembers.remove(userId);
+            if (lastChannelMembers.isEmpty()) {
+                channelMap.remove(lastChannel);
+            }
+            userToChannel.remove(userId);
+        }
+        if (!channelMap.containsKey(channel)) {
+            channelMap.put(channel, new HashSet<>());
+        }
+        channelMap.get(channel).add(userId);
+        userToChannel.put(userId, channel);
+    }
+
+    private void exitVideoChatRoom(int userId) {
+        logger.info("User " + userId + " exits the chat room.");
+        if (userToChannel.containsKey(userId)) {
+            String lastChannel = userToChannel.get(userId);
+            Set<Integer> lastChannelMembers = channelMap.get(lastChannel);
+            lastChannelMembers.remove(userId);
+            if (lastChannelMembers.isEmpty()) {
+                channelMap.remove(lastChannel);
+            }
+            userToChannel.remove(userId);
+        }
+    }
+
+    private final Map<Integer, String> userToChannel = new Hashtable<>();
+    private final Map<String, Set<Integer>> channelMap = new Hashtable<>();
+    @MessageMapping(ClientConstant.API_CHAT_WEBRTC_CALL)
+    public void webRTCCall(SimpMessageHeaderAccessor sha, WebRTCCallMessage message) throws Exception {
+        String session = Objects.requireNonNull(sha.getUser()).getName();
+        int userId = DatabaseService.queryUserIdBySession(session);
+        String channel = message.getChannel();
+        String command = message.getCommand();
+        String payload = message.getPayload();
+
+        switch (command) {
+            case "connect": {
+                enterVideoChatRoom(userId, channel);
+                JsonObject response = new JsonObject(new LinkedHashMap<>());
+                JsonObject responsePayload = new JsonObject(new LinkedHashMap<>());
+                JsonObject potentialCandidates = new JsonObject(new ArrayList<>());
+                response.put(ClientConstant.CHAT_WEBRTC_CALL_CHANNEL, new JsonObject(channel));
+                response.put(ClientConstant.CHAT_WEBRTC_CALL_COMMAND, new JsonObject("init"));
+                for (Integer memberId : channelMap.get(channel)) {
+                    if (memberId != userId) {
+                        potentialCandidates.add(new JsonObject(memberId));
+                    }
+                }
+                responsePayload.put("candidates", potentialCandidates);
+                response.put(ClientConstant.CHAT_WEBRTC_CALL_PAYLOAD, new JsonObject(responsePayload.toString()));
+                messagingTemplate.convertAndSendToUser(session, ServerConstant.DIR_WEBRTC_CALL, response.toString());
+            }
+            break;
+            case "disconnect": {
+                exitVideoChatRoom(userId);
+            }
+            break;
+            case "transfer": {
+                JsonObject payloadAsJson = JsonObject.create(payload);
+                int from = payloadAsJson.get("from").getInt();
+                int to = payloadAsJson.get("to").getInt();
+                String type = payloadAsJson.get("type").getString();
+                assert userId == from;
+                assert userId != to;
+                logger.info("Transferring = " + message.getPayload() + " from " + from + ", to " + to + ", type " + type);
+                if (DatabaseService.isOnline(to)) {
+                    messagingTemplate.convertAndSendToUser(
+                            DatabaseService.queryLastSessionById(to),
+                            ServerConstant.DIR_WEBRTC_CALL, new ObjectMapper().writeValueAsString(message));
+                }
+            }
+            break;
+        }
+    }
+
+    @MessageMapping(ClientConstant.API_FILE_ARCHIVE)
+    public void fileArchive(SimpMessageHeaderAccessor sha, FileArchiveMessage message) {
+        String session = Objects.requireNonNull(sha.getUser()).getName();
+        int firstSelector = message.getFirstSelector();
+        int secondSelector = message.getSecondSelector();
+        String fileName = message.getFileName();
+        String fileLink = message.getFileLink();
+        int fileUploader = message.getFileUploader();
+        int fileSize = message.getFileSize();
+        DatabaseService.newFileDescriptor(firstSelector, secondSelector, fileName, fileLink, fileUploader, fileSize);
+    }
+
     private String buildUserMessage(int userId)
-            throws UserNotExistsException {
-        UserInfo userInfo = DatabaseService.getUserInfo(userId);
-        Map<String, JsonObject> userInfoMap = new HashMap<>();
-        userInfoMap.put(ServerConstant.ACC_USER_SYNC__USER_ID, new JsonObject(userInfo.getUserId()));
-        userInfoMap.put(ServerConstant.ACC_USER_SYNC__USER_SESSION, new JsonObject(userInfo.getSession()));
-        userInfoMap.put(ServerConstant.ACC_USER_SYNC__USER_EMAIL, new JsonObject(userInfo.getUserEmail()));
-        userInfoMap.put(ServerConstant.ACC_USER_SYNC__USER_NAME, new JsonObject(userInfo.getUserName()));
-        userInfoMap.put(ServerConstant.ACC_USER_SYNC__USER_PASSWORD, new JsonObject(userInfo.getUserPassword()));
-        userInfoMap.put(ServerConstant.ACC_USER_SYNC__CONTACT_LIST, new JsonObject(userInfo.getContactList()
-                .stream().map(JsonObject::new).collect(Collectors.toList())));
-        userInfoMap.put(ServerConstant.ACC_USER_SYNC__GROUP_LIST, new JsonObject(userInfo.getGroupList()
-                .stream().map(JsonObject::new).collect(Collectors.toList())));
-        userInfoMap.put(ServerConstant.ACC_USER_SYNC__REQUEST_LIST, new JsonObject(userInfo.getRequestList()
-                .stream().map(JsonObject::new).collect(Collectors.toList())));
-        return new JsonObject(userInfoMap).toString();
+            throws UserNotExistsException, JsonProcessingException {
+        UserInfo userInfo = DatabaseService.getUser(userId);
+        return new ObjectMapper().writeValueAsString(userInfo);
     }
 
     private String buildContactMessage(int contactId)
-            throws UserNotExistsException {
-        UserInfo contactInfo = DatabaseService.getUserInfo(contactId);
-        Map<String, JsonObject> contactInfoMap = new HashMap<>();
-        contactInfoMap.put(ServerConstant.ACC_CONTACT_SYNC__CONTACT_ID, new JsonObject(contactInfo.getUserId()));
-        contactInfoMap.put(ServerConstant.ACC_CONTACT_SYNC__CONTACT_EMAIL, new JsonObject(contactInfo.getUserEmail()));
-        contactInfoMap.put(ServerConstant.ACC_CONTACT_SYNC__CONTACT_NAME, new JsonObject(contactInfo.getUserName()));
-        return new JsonObject(contactInfoMap).toString();
+            throws UserNotExistsException, JsonProcessingException {
+        ContactInfo contactInfo = DatabaseService.getContact(contactId);
+        return new ObjectMapper().writeValueAsString(contactInfo);
     }
 
     private String buildGroupMessage(int groupId)
-            throws GroupNotExistsException {
-        GroupInfo groupInfo = DatabaseService.getGroupInfo(groupId);
-        Map<String, JsonObject> groupInfoMap = new HashMap<>();
-        groupInfoMap.put(ServerConstant.ACC_GROUP_SYNC__GROUP_ID, new JsonObject(groupInfo.getGroupId()));
-        groupInfoMap.put(ServerConstant.ACC_GROUP_SYNC__GROUP_NAME, new JsonObject(groupInfo.getGroupName()));
-        groupInfoMap.put(ServerConstant.ACC_GROUP_SYNC__GROUP_HOST, new JsonObject(groupInfo.getGroupHostId()));
-        groupInfoMap.put(ServerConstant.ACC_GROUP_SYNC__GROUP_MEMBER_LIST, new JsonObject(groupInfo.getMemberList()
-                .stream().map(JsonObject::new).collect(Collectors.toList())));
-        return new JsonObject(groupInfoMap).toString();
+            throws GroupNotExistsException, JsonProcessingException {
+        GroupInfo groupInfo = DatabaseService.getGroup(groupId);
+        return new ObjectMapper().writeValueAsString(groupInfo);
     }
 
     private String buildRequestMessage(int requestId)
-            throws RequestNotExistsException {
-        RequestInfo requestInfo = DatabaseService.getRequestInfo(requestId);
-        Map<String, JsonObject> requestInfoMap = new HashMap<>();
-        requestInfoMap.put(ServerConstant.ACC_REQUEST_SYNC__REQUEST_ID, new JsonObject(requestInfo.getRequestId()));
-        requestInfoMap.put(ServerConstant.ACC_REQUEST_SYNC__REQUEST_STATUS, new JsonObject(requestInfo.getRequestStatus()));
-        requestInfoMap.put(ServerConstant.ACC_REQUEST_SYNC__REQUEST_TYPE, new JsonObject(requestInfo.getRequestType()));
-        requestInfoMap.put(ServerConstant.ACC_REQUEST_SYNC__REQUEST_METADATA, requestInfo.getRequestMetadata());
-        return new JsonObject(requestInfoMap).toString();
+            throws RequestNotExistsException, JsonProcessingException {
+        RequestInfo requestInfo = DatabaseService.getRequest(requestId);
+        return new ObjectMapper().writeValueAsString(requestInfo);
     }
 }

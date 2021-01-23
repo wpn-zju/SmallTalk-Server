@@ -7,5 +7,4 @@ public enum JsonType {
     String,
     Array,
     Object,
-    Invalid;
 }

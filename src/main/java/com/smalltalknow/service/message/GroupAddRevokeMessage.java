@@ -10,11 +10,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @AllArgsConstructor(onConstructor = @__(@JsonCreator))
-public class WebRTCCallMessage {
-    @JsonProperty(ClientConstant.CHAT_WEBRTC_CALL_COMMAND)
-    private final String command;
-    @JsonProperty(ClientConstant.CHAT_WEBRTC_CALL_CHANNEL)
-    private final String channel;
-    @JsonProperty(ClientConstant.CHAT_WEBRTC_CALL_PAYLOAD)
-    private final String payload;
+public class GroupAddRevokeMessage {
+    @JsonProperty(ClientConstant.CHAT_GROUP_ADD_REVOKE_REQUEST_ID)
+    private final int requestId;
 }

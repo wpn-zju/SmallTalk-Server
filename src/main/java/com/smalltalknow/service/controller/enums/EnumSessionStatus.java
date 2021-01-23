@@ -5,7 +5,7 @@ public enum EnumSessionStatus {
     SESSION_STATUS_EXPIRED("session_expired"),
     SESSION_STATUS_REVOKED("session_revoked");
 
-    private String token;
+    private final String token;
 
     EnumSessionStatus(String token) { this.token = token; }
 

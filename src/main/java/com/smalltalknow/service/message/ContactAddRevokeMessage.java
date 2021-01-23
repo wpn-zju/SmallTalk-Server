@@ -10,7 +10,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @AllArgsConstructor(onConstructor = @__(@JsonCreator))
-public class UserModifyNameMessage {
-    @JsonProperty(ClientConstant.USER_MODIFY_USER_NAME_NEW_USER_NAME)
-    private final String newUserName;
+public class ContactAddRevokeMessage {
+    @JsonProperty(ClientConstant.CHAT_CONTACT_ADD_REVOKE_REQUEST_ID)
+    private final int requestId;
 }

@@ -6,7 +6,7 @@ public enum EnumRequestStatus {
     REQUEST_STATUS_REFUSED("request_refused"),
     REQUEST_STATUS_REVOKED("request_revoked");
 
-    private String token;
+    private final String token;
 
     EnumRequestStatus(String token) { this.token = token; }
 

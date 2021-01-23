@@ -10,9 +10,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @AllArgsConstructor(onConstructor = @__(@JsonCreator))
-public class GroupModifyNameMessage {
-    @JsonProperty(ClientConstant.CHAT_GROUP_MODIFY_NAME_GROUP_ID)
-    private final int groupId;
-    @JsonProperty(ClientConstant.CHAT_GROUP_MODIFY_NAME_NEW_GROUP_NAME)
-    private final String newGroupName;
+public class UserSessionReplaceMessage {
+    @JsonProperty(ClientConstant.USER_SESSION_REPLACE_OLD_SESSION)
+    private final String oldSession;
 }

@@ -1,14 +1,9 @@
 package com.smalltalknow.service.database;
 
-import com.smalltalknow.service.controller.enums.EnumMessageStatus;
-import com.smalltalknow.service.controller.enums.EnumPasscodeStatus;
-import com.smalltalknow.service.controller.enums.EnumRequestStatus;
-import com.smalltalknow.service.controller.enums.EnumSessionStatus;
+import com.smalltalknow.service.controller.enums.*;
 import com.smalltalknow.service.controller.websocket.RequestConstant;
 import com.smalltalknow.service.database.exception.*;
-import com.smalltalknow.service.database.model.GroupInfo;
-import com.smalltalknow.service.database.model.RequestInfo;
-import com.smalltalknow.service.database.model.UserInfo;
+import com.smalltalknow.service.database.model.*;
 import com.smalltalknow.service.tool.JsonObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,26 +24,27 @@ public class DatabaseService {
             "allowPublicKeyRetrieval=true";
     private static final String user = "zjuwpn";
     private static final String password = "peinan";
+    private static final String defaultAvatarLink = "https://peinanweng.com/download_index/base/avatar.png";
 
-    private static final String searchUserIdByEmail = "select user_id from email_to_user_id where user_email = ?";
+    private static final String queryUserIdByEmail = "select user_id from email_to_user_id where user_email = ?";
     public static boolean hasUserWithEmail(String userEmail) {
         try (Connection con = DriverManager.getConnection(url, user, password);
-             PreparedStatement searchUserIdByEmailSt = con.prepareStatement(searchUserIdByEmail)) {
-            searchUserIdByEmailSt.setString(1, userEmail);
-            try (ResultSet rs = searchUserIdByEmailSt.executeQuery()) {
+             PreparedStatement queryUserIdByEmailSt = con.prepareStatement(queryUserIdByEmail)) {
+            queryUserIdByEmailSt.setString(1, userEmail);
+            try (ResultSet rs = queryUserIdByEmailSt.executeQuery()) {
                 return rs.next();
             }
         } catch (SQLException e) {
             logger.info(e.getMessage());
-            throw new DataAccessException("MySQL Execution Failed checkUserByEmail(String userEmail)");
+            throw new DataAccessException("MySQL Execution Failed hasUserWithEmail(String userEmail)");
         }
     }
 
     public static int queryUserIdByEmail(String userEmail) throws UserEmailNotExistsException {
         try (Connection con = DriverManager.getConnection(url, user, password);
-             PreparedStatement searchUserIdByEmailSt = con.prepareStatement(searchUserIdByEmail)) {
-            searchUserIdByEmailSt.setString(1, userEmail);
-            try (ResultSet rs = searchUserIdByEmailSt.executeQuery()) {
+             PreparedStatement queryUserIdByEmailSt = con.prepareStatement(queryUserIdByEmail)) {
+            queryUserIdByEmailSt.setString(1, userEmail);
+            try (ResultSet rs = queryUserIdByEmailSt.executeQuery()) {
                 if (rs.next()) {
                     return rs.getInt(1);
                 } else {
@@ -74,16 +70,16 @@ public class DatabaseService {
         }
     }
 
-    private static final String searchSession = "select " +
+    private static final String querySession = "select " +
             "session_id, user_id, session_create_datetime, session_expire_datetime, session_status " +
             "from session_storage where session_id = ?";
     @SuppressWarnings("unused")
     public static int queryUserIdBySession(String sessionToken)
             throws SessionInvalidException, SessionExpiredException, SessionRevokedException {
         try (Connection con = DriverManager.getConnection(url, user, password);
-             PreparedStatement searchUserIdBySessionSt = con.prepareStatement(searchSession)) {
-            searchUserIdBySessionSt.setString(1, sessionToken);
-            try (ResultSet rs = searchUserIdBySessionSt.executeQuery()) {
+             PreparedStatement queryUserIdBySessionSt = con.prepareStatement(querySession)) {
+            queryUserIdBySessionSt.setString(1, sessionToken);
+            try (ResultSet rs = queryUserIdBySessionSt.executeQuery()) {
                 if (rs.next()) {
                     String sessionId = rs.getString(1);
                     int userId = rs.getInt(2);
@@ -114,32 +110,35 @@ public class DatabaseService {
         }
     }
 
-    /* Create an new account, you have to manually set user_name and user_password after the account has created. */
-    private static final String createAccount = "insert into account " +
+    /* Create an new account, have to manually set user_name and user_password after the account has created. */
+    private static final String insertAccount = "insert into account " +
             "(user_email, user_name, user_password, contact_list, group_list, request_list, offline_message_list, last_session) " +
             "values (?, 'New User', 'Password Placeholder', '[]', '[]', '[]', '[]', '00000000-0000-0000-0000-000000000000')";
-    private static final String createAccountDetail = "insert into account_detail (user_id) values (?)";
-    private static final String getLastInserted = "select last_insert_id()";
-    private static final String storeReverseSearchRecord = "insert into email_to_user_id " +
+    private static final String insertAccountDetail = "insert into account_detail " +
+            "(user_id, user_avatar_link) " +
+            "values (?, ?)";
+    private static final String queryLastInserted = "select last_insert_id()";
+    private static final String insertReverseSearchRecord = "insert into email_to_user_id " +
             "(user_email, user_id) values (?, ?)";
     public static int newAccount(String userEmail) throws DataAccessException, UserEmailExistsException {
         if (hasUserWithEmail(userEmail)) { throw new UserEmailExistsException(); }
 
         try (Connection con = DriverManager.getConnection(url, user, password);
-             PreparedStatement createAccSt = con.prepareStatement(createAccount);
-             PreparedStatement createAccDetailSt = con.prepareStatement(createAccountDetail);
-             PreparedStatement getLastInsertedSt = con.prepareStatement(getLastInserted);
-             PreparedStatement storeReverseSearchRecordSt = con.prepareStatement(storeReverseSearchRecord)) {
-            createAccSt.setString(1, userEmail);
-            createAccSt.executeUpdate();
-            try (ResultSet rs = getLastInsertedSt.executeQuery()) {
+             PreparedStatement insertAccountSt = con.prepareStatement(insertAccount);
+             PreparedStatement insertAccountDetailSt = con.prepareStatement(insertAccountDetail);
+             PreparedStatement queryLastInsertedSt = con.prepareStatement(queryLastInserted);
+             PreparedStatement insertReverseSearchRecordSt = con.prepareStatement(insertReverseSearchRecord)) {
+            insertAccountSt.setString(1, userEmail);
+            insertAccountSt.executeUpdate();
+            try (ResultSet rs = queryLastInsertedSt.executeQuery()) {
                 if (rs.next()) {
                     int userId = rs.getInt(1);
-                    createAccDetailSt.setInt(1, userId);
-                    createAccDetailSt.executeUpdate();
-                    storeReverseSearchRecordSt.setString(1, userEmail);
-                    storeReverseSearchRecordSt.setInt(2, userId);
-                    storeReverseSearchRecordSt.executeUpdate();
+                    insertAccountDetailSt.setInt(1, userId);
+                    insertAccountDetailSt.setString(2, defaultAvatarLink);
+                    insertAccountDetailSt.executeUpdate();
+                    insertReverseSearchRecordSt.setString(1, userEmail);
+                    insertReverseSearchRecordSt.setInt(2, userId);
+                    insertReverseSearchRecordSt.executeUpdate();
                     return userId;
                 } else {
                     throw new DataAccessException("Unexpected Error - Create New Account!");
@@ -151,17 +150,18 @@ public class DatabaseService {
         }
     }
 
-    /* Create a new group, you have to manually add the creator user to this group after the group has created. */
-    private static final String createGroup = "insert into group_info " +
-            "(group_name, group_host_id, member_list) " +
-            "values ('New Group', ?, '[]')";
+    /* Create a new group, and automatically add the creator to this group as administrator after the group has created. */
+    private static final String insertGroup = "insert into group_info " +
+            "(group_name, group_host_id, member_list, group_avatar_link) " +
+            "values ('New Group', ?, '[]', ?)";
     public static int newGroup(int hostId) throws DataAccessException {
         try (Connection con = DriverManager.getConnection(url, user, password);
-             PreparedStatement createGroupSt = con.prepareStatement(createGroup);
-             PreparedStatement getLastInsertedSt = con.prepareStatement(getLastInserted)) {
-            createGroupSt.setInt(1, hostId);
-            createGroupSt.executeUpdate();
-            try (ResultSet rs = getLastInsertedSt.executeQuery()) {
+             PreparedStatement insertGroupSt = con.prepareStatement(insertGroup);
+             PreparedStatement queryLastInsertedSt = con.prepareStatement(queryLastInserted)) {
+            insertGroupSt.setInt(1, hostId);
+            insertGroupSt.setString(2, defaultAvatarLink);
+            insertGroupSt.executeUpdate();
+            try (ResultSet rs = queryLastInsertedSt.executeQuery()) {
                 if (rs.next()) {
                     int newGroupId = rs.getInt(1);
                     newMember(newGroupId, hostId);
@@ -176,79 +176,180 @@ public class DatabaseService {
         }
     }
 
-    private static final String editUserName = "update account set user_name = ? where user_id = ?";
+    private static final String updateUserName = "update account set user_name = ? where user_id = ?";
     public static void modifyUserName(int userId, String newName) throws DataAccessException {
         try (Connection con = DriverManager.getConnection(url, user, password);
-             PreparedStatement editNameSt = con.prepareStatement(editUserName)) {
-            editNameSt.setString(1, newName);
-            editNameSt.setInt(2, userId);
-            editNameSt.executeUpdate();
+             PreparedStatement updateUserNameSt = con.prepareStatement(updateUserName)) {
+            updateUserNameSt.setString(1, newName);
+            updateUserNameSt.setInt(2, userId);
+            updateUserNameSt.executeUpdate();
         } catch (SQLException e) {
             logger.info(e.getMessage());
             throw new DataAccessException("MySQL Execution Failed modifyUserName(int userId, String newName)");
         }
     }
 
-    private static final String updatePassword = "update account set user_password = ? where user_id = ?";
+    private static final String updateUserPassword = "update account set user_password = ? where user_id = ?";
     public static void modifyUserPassword(int userId, String newPassword) throws DataAccessException {
         try (Connection con = DriverManager.getConnection(url, user, password);
-             PreparedStatement editPwdSt = con.prepareStatement(updatePassword)) {
-            editPwdSt.setString(1, newPassword);
-            editPwdSt.setInt(2, userId);
-            editPwdSt.executeUpdate();
+             PreparedStatement updateUserPasswordSt = con.prepareStatement(updateUserPassword)) {
+            updateUserPasswordSt.setString(1, newPassword);
+            updateUserPasswordSt.setInt(2, userId);
+            updateUserPasswordSt.executeUpdate();
         } catch (SQLException e) {
             logger.info(e.getMessage());
-            throw new DataAccessException("MySQL Execution Failed modifyPassword(int userId, String newPassword)");
+            throw new DataAccessException("MySQL Execution Failed modifyUserPassword(int userId, String newPassword)");
         }
     }
 
-    private static final String editGroupName = "update group_info set group_name = ? where group_id = ?";
+    private static final String updateUserGender = "update account_detail set user_gender = ? where user_id = ?";
+    public static void modifyUserGender(int userId, int newGender) throws DataAccessException {
+        try (Connection con = DriverManager.getConnection(url, user, password);
+             PreparedStatement updateUserGenderSt = con.prepareStatement(updateUserGender)) {
+            updateUserGenderSt.setInt(1, newGender);
+            updateUserGenderSt.setInt(2, userId);
+            updateUserGenderSt.executeUpdate();
+        } catch (SQLException e) {
+            logger.info(e.getMessage());
+            throw new DataAccessException("MySQL Execution Failed modifyUserGender(int userId, int newGender)");
+        }
+    }
+
+    private static final String updateUserAvatarLink = "update account_detail set user_avatar_link = ? where user_id = ?";
+    public static void modifyUserAvatarLink(int userId, String newAvatarLink) throws DataAccessException {
+        try (Connection con = DriverManager.getConnection(url, user, password);
+             PreparedStatement updateUserAvatarLinkSt = con.prepareStatement(updateUserAvatarLink)) {
+            updateUserAvatarLinkSt.setString(1, newAvatarLink);
+            updateUserAvatarLinkSt.setInt(2, userId);
+            updateUserAvatarLinkSt.executeUpdate();
+        } catch (SQLException e) {
+            logger.info(e.getMessage());
+            throw new DataAccessException("MySQL Execution Failed modifyUserAvatarLink(int userId, String newAvatarLink)");
+        }
+    }
+
+    private static final String updateUserInfo = "update account_detail set user_info = ? where user_id = ?";
+    public static void modifyUserInfo(int userId, String newUserInfo) throws DataAccessException {
+        try (Connection con = DriverManager.getConnection(url, user, password);
+             PreparedStatement updateUserInfoSt = con.prepareStatement(updateUserInfo)) {
+            updateUserInfoSt.setString(1, newUserInfo);
+            updateUserInfoSt.setInt(2, userId);
+            updateUserInfoSt.executeUpdate();
+        } catch (SQLException e) {
+            logger.info(e.getMessage());
+            throw new DataAccessException("MySQL Execution Failed modifyUserInfo(int userId, String newUserInfo)");
+        }
+    }
+
+    private static final String updateUserLocation = "update account_detail set user_location = ? where user_id = ?";
+    public static void modifyUserLocation(int userId, String newUserLocation) throws DataAccessException {
+        try (Connection con = DriverManager.getConnection(url, user, password);
+             PreparedStatement updateUserLocationSt = con.prepareStatement(updateUserLocation)) {
+            updateUserLocationSt.setString(1, newUserLocation);
+            updateUserLocationSt.setInt(2, userId);
+            updateUserLocationSt.executeUpdate();
+        } catch (SQLException e) {
+            logger.info(e.getMessage());
+            throw new DataAccessException("MySQL Execution Failed modifyUserLocation(int userId, String newUserLocation)");
+        }
+    }
+
+    private static final String updateGroupName = "update group_info set group_name = ? where group_id = ?";
     public static void modifyGroupName(int groupId, String newGroupName) throws DataAccessException {
         try (Connection con = DriverManager.getConnection(url, user, password);
-             PreparedStatement editNameSt = con.prepareStatement(editGroupName)) {
-            editNameSt.setString(1, newGroupName);
-            editNameSt.setInt(2, groupId);
-            editNameSt.executeUpdate();
+             PreparedStatement updateGroupNameSt = con.prepareStatement(updateGroupName)) {
+            updateGroupNameSt.setString(1, newGroupName);
+            updateGroupNameSt.setInt(2, groupId);
+            updateGroupNameSt.executeUpdate();
         } catch (SQLException e) {
             logger.info(e.getMessage());
             throw new DataAccessException("MySQL Execution Failed modifyGroupName(int groupId, String newGroupName)");
         }
     }
 
+    private static final String updateGroupInfo = "update group_info set group_info = ? where group_id = ?";
+    public static void modifyGroupInfo(int groupId, String newGroupInfo) throws DataAccessException {
+        try (Connection con = DriverManager.getConnection(url, user, password);
+             PreparedStatement updateGroupInfoSt = con.prepareStatement(updateGroupInfo)) {
+            updateGroupInfoSt.setString(1, newGroupInfo);
+            updateGroupInfoSt.setInt(2, groupId);
+            updateGroupInfoSt.executeUpdate();
+        } catch (SQLException e) {
+            logger.info(e.getMessage());
+            throw new DataAccessException("MySQL Execution Failed modifyGroupInfo(int groupId, String newGroupInfo)");
+        }
+    }
+
+    private static final String updateGroupAvatarLink = "update group_info set group_avatar_link = ? where group_id = ?";
+    public static void modifyGroupAvatarLink(int groupId, String newAvatarLink) throws DataAccessException {
+        try (Connection con = DriverManager.getConnection(url, user, password);
+             PreparedStatement updateGroupAvatarLinkSt = con.prepareStatement(updateGroupAvatarLink)) {
+            updateGroupAvatarLinkSt.setString(1, newAvatarLink);
+            updateGroupAvatarLinkSt.setInt(2, groupId);
+            updateGroupAvatarLinkSt.executeUpdate();
+        } catch (SQLException e) {
+            logger.info(e.getMessage());
+            throw new DataAccessException("MySQL Execution Failed modifyGroupAvatar(int groupId, String newAvatarLink)");
+        }
+    }
+
     private static final String updateLoginTime = "update account set last_login = ? where user_id = ?";
     public static void updateLoginRecord(int userId) throws DataAccessException {
         try (Connection con = DriverManager.getConnection(url, user, password);
-             PreparedStatement loginTimeUpdSt = con.prepareStatement(updateLoginTime)) {
-            loginTimeUpdSt.setTimestamp(1, Timestamp.from(Instant.now()));
-            loginTimeUpdSt.setInt(2, userId);
-            loginTimeUpdSt.executeUpdate();
+             PreparedStatement updateLoginTimeSt = con.prepareStatement(updateLoginTime)) {
+            updateLoginTimeSt.setTimestamp(1, Timestamp.from(Instant.now()));
+            updateLoginTimeSt.setInt(2, userId);
+            updateLoginTimeSt.executeUpdate();
         } catch (SQLException e) {
             logger.info(e.getMessage());
-            throw new DataAccessException("MySQL Execution Failed updateUserLoginRecord(int userId)");
+            throw new DataAccessException("MySQL Execution Failed updateLoginRecord(int userId)");
         }
     }
 
     private static final String updateLogoutTime = "update account set last_logout = ? where user_id = ?";
     public static void updateLogoutRecord(int userId) throws DataAccessException {
         try (Connection con = DriverManager.getConnection(url, user, password);
-             PreparedStatement logoutTimeUpdSt = con.prepareStatement(updateLogoutTime)) {
-            logoutTimeUpdSt.setTimestamp(1, Timestamp.from(Instant.now()));
-            logoutTimeUpdSt.setInt(2, userId);
-            logoutTimeUpdSt.executeUpdate();
+             PreparedStatement updateLogoutTimeSt = con.prepareStatement(updateLogoutTime)) {
+            updateLogoutTimeSt.setTimestamp(1, Timestamp.from(Instant.now()));
+            updateLogoutTimeSt.setInt(2, userId);
+            updateLogoutTimeSt.executeUpdate();
         } catch (SQLException e) {
             logger.info(e.getMessage());
-            throw new DataAccessException("MySQL Execution Failed updateUserLogoutRecord(int userId)");
+            throw new DataAccessException("MySQL Execution Failed updateLogoutRecord(int userId)");
         }
     }
 
-    private static final String searchUser = "select " +
-            "user_id, user_email, user_name, user_password, contact_list, group_list, request_list, offline_message_list, last_session " +
-            "from account where user_id = ?";
-    public static UserInfo getUserInfo(int userId) throws UserNotExistsException, DataAccessException {
+    private static final String queryUserLoginRecords = "select last_login, last_logout from account where user_id = ?";
+    public static boolean isOnline(int userId) {
         try (Connection con = DriverManager.getConnection(url, user, password);
-             PreparedStatement searchAccSt = con.prepareStatement(searchUser)) {
-            searchAccSt.setInt(1, userId);
-            try (ResultSet rs = searchAccSt.executeQuery()) {
+             PreparedStatement queryUserLoginRecordsSt = con.prepareStatement(queryUserLoginRecords)) {
+            queryUserLoginRecordsSt.setInt(1, userId);
+            try (ResultSet rs = queryUserLoginRecordsSt.executeQuery()) {
+                if (rs.next()) {
+                    Instant lastLogin = rs.getTimestamp(1).toInstant();
+                    Instant lastLogout = rs.getTimestamp(2).toInstant();
+                    return lastLogout.plus(Duration.ofMillis(1)).isBefore(lastLogin);
+                } else {
+                    throw new DataAccessException("Unexpected Error - Check If Online!");
+                }
+            }
+        } catch (SQLException e) {
+            logger.info(e.getMessage());
+            throw new DataAccessException("MySQL Execution Failed isOnline(int userId)");
+        }
+    }
+
+    private static final String queryUser = "select " +
+            "p1.user_id, p1.user_email, p1.user_name, p1.user_password, p1.contact_list, p1.group_list, p1.request_list, p1.last_session, " +
+            "p2.user_gender, p2.user_avatar_link, p2.user_info, p2.user_location " +
+            "from account p1 inner join " +
+            "(select user_id, user_gender, user_avatar_link, user_info, user_location from account_detail) p2 " +
+            "on p1.user_id = p2.user_id where p1.user_id = ?";
+    public static UserInfo getUser(int userId) throws UserNotExistsException, DataAccessException {
+        try (Connection con = DriverManager.getConnection(url, user, password);
+             PreparedStatement queryUserSt = con.prepareStatement(queryUser)) {
+            queryUserSt.setInt(1, userId);
+            try (ResultSet rs = queryUserSt.executeQuery()) {
                 if (rs.next()) {
                     return UserInfo.builder()
                             .userId(rs.getInt(1))
@@ -261,74 +362,102 @@ public class DatabaseService {
                                     .stream().map(JsonObject::getInt).collect(Collectors.toList()))
                             .requestList(JsonObject.create(rs.getString(7)).getList()
                                     .stream().map(JsonObject::getInt).collect(Collectors.toList()))
-                            .session(rs.getString(9)).build();
+                            .userSession(rs.getString(8))
+                            .userGender(rs.getInt(9))
+                            .userAvatarLink(rs.getString(10))
+                            .userInfo(rs.getString(11))
+                            .userLocation(rs.getString(12)).build();
                 } else {
                     throw new UserNotExistsException();
                 }
             }
         } catch (SQLException e) {
             logger.info(e.getMessage());
-            throw new DataAccessException("MySQL Execution Failed getUserInfo(int userId)");
+            throw new DataAccessException("MySQL Execution Failed getUser(int userId)");
         }
     }
 
-    private static final String searchGroup = "select " +
-            "group_id, group_name, group_host_id, member_list from group_info where group_id = ?";
-    public static GroupInfo getGroupInfo(int groupId) throws GroupNotExistsException, DataAccessException {
+    public static ContactInfo getContact(int contactId) throws UserNotExistsException, DataAccessException {
         try (Connection con = DriverManager.getConnection(url, user, password);
-             PreparedStatement searchGroupSt = con.prepareStatement(searchGroup)) {
-            searchGroupSt.setInt(1, groupId);
-            try (ResultSet rs = searchGroupSt.executeQuery()) {
+             PreparedStatement queryUserSt = con.prepareStatement(queryUser)) {
+            queryUserSt.setInt(1, contactId);
+            try (ResultSet rs = queryUserSt.executeQuery()) {
+                if (rs.next()) {
+                    return ContactInfo.builder()
+                            .contactId(rs.getInt(1))
+                            .contactEmail(rs.getString(2))
+                            .contactName(rs.getString(3))
+                            .contactGender(rs.getInt(9))
+                            .contactAvatarLink(rs.getString(10))
+                            .contactInfo(rs.getString(11))
+                            .contactLocation(rs.getString(12)).build();
+                } else {
+                    throw new UserNotExistsException();
+                }
+            }
+        } catch (SQLException e) {
+            logger.info(e.getMessage());
+            throw new DataAccessException("MySQL Execution Failed getContact(int contactId)");
+        }
+    }
+
+    private static final String queryGroup = "select " +
+            "group_id, group_name, group_host_id, member_list, group_info, group_avatar_link from group_info where group_id = ?";
+    public static GroupInfo getGroup(int groupId) throws GroupNotExistsException, DataAccessException {
+        try (Connection con = DriverManager.getConnection(url, user, password);
+             PreparedStatement queryGroupSt = con.prepareStatement(queryGroup)) {
+            queryGroupSt.setInt(1, groupId);
+            try (ResultSet rs = queryGroupSt.executeQuery()) {
                 if (rs.next()) {
                     return GroupInfo.builder()
                             .groupId(rs.getInt(1))
                             .groupName(rs.getString(2))
                             .groupHostId(rs.getInt(3))
                             .memberList(JsonObject.create(rs.getString(4)).getList()
-                                    .stream().map(JsonObject::getInt).collect(Collectors.toList())).build();
+                                    .stream().map(JsonObject::getInt).collect(Collectors.toList()))
+                            .groupInfo(rs.getString(5))
+                            .groupAvatarLink(rs.getString(6)).build();
                 } else {
                     throw new GroupNotExistsException();
                 }
             }
         } catch (SQLException e) {
             logger.info(e.getMessage());
-            throw new DataAccessException("MySQL Execution Failed getGroupInfo(int groupId)");
+            throw new DataAccessException("MySQL Execution Failed getGroup(int groupId)");
         }
     }
 
-    private static final String searchRequest = "select " +
-            "request_id, request_status, request_type, request_metadata, visible_user_list from request where request_id = ?";
-    public static RequestInfo getRequestInfo(int requestId) throws RequestNotExistsException, DataAccessException {
+    private static final String queryRequest = "select " +
+            "request_id, request_status, request_type, request_metadata from request where request_id = ?";
+    public static RequestInfo getRequest(int requestId) throws RequestNotExistsException, DataAccessException {
         try (Connection con = DriverManager.getConnection(url, user, password);
-             PreparedStatement searchRequestSt = con.prepareStatement(searchRequest)) {
-            searchRequestSt.setInt(1, requestId);
-            try (ResultSet rs = searchRequestSt.executeQuery()) {
+             PreparedStatement queryRequestSt = con.prepareStatement(queryRequest)) {
+            queryRequestSt.setInt(1, requestId);
+            try (ResultSet rs = queryRequestSt.executeQuery()) {
                 if (rs.next()) {
                     return RequestInfo.builder()
                             .requestId(rs.getInt(1))
                             .requestStatus(rs.getString(2))
                             .requestType(rs.getString(3))
-                            .requestMetadata(JsonObject.create(rs.getString(4)))
-                            .visibleUserList(JsonObject.create(rs.getString(5))
-                                    .getList().stream().map(JsonObject::getInt).collect(Collectors.toList())).build();
+                            .requestMetadata(rs.getString(4)).build();
                 } else {
                     throw new RequestNotExistsException();
                 }
             }
         } catch (SQLException e) {
             logger.info(e.getMessage());
-            throw new DataAccessException("MySQL Execution Failed getGroupInfo(int groupId)");
+            throw new DataAccessException("MySQL Execution Failed getRequest(int requestId)");
         }
     }
 
-    private static final String checkIsFriend = "select user_id from account " +
+    private static final String checkFriendship = "select user_id from account " +
             "where user_id = ? and json_contains(contact_list->'$', ?, '$')";
     public static boolean isFriend(int userId1, int userId2) throws DataAccessException {
         try (Connection con = DriverManager.getConnection(url, user, password);
-             PreparedStatement checkIsFriendSt = con.prepareStatement(checkIsFriend)) {
-            checkIsFriendSt.setInt(1, userId1);
-            checkIsFriendSt.setString(2, String.valueOf(userId2));
-            try (ResultSet rs = checkIsFriendSt.executeQuery()) {
+             PreparedStatement checkFriendshipSt = con.prepareStatement(checkFriendship)) {
+            checkFriendshipSt.setInt(1, userId1);
+            checkFriendshipSt.setString(2, String.valueOf(userId2));
+            try (ResultSet rs = checkFriendshipSt.executeQuery()) {
                 return rs.next();
             }
         } catch (SQLException e) {
@@ -337,14 +466,14 @@ public class DatabaseService {
         }
     }
 
-    private static final String checkIsMember = "select user_id from account " +
+    private static final String checkMembership = "select user_id from account " +
             "where user_id = ? and json_contains(group_list->'$', ?, '$')";
     public static boolean isMember(int groupId, int userId) throws DataAccessException {
         try (Connection con = DriverManager.getConnection(url, user, password);
-             PreparedStatement checkIsMemberSt = con.prepareStatement(checkIsMember)) {
-            checkIsMemberSt.setInt(1, userId);
-            checkIsMemberSt.setString(2, String.valueOf(groupId));
-            try (ResultSet rs = checkIsMemberSt.executeQuery()) {
+             PreparedStatement checkMembershipSt = con.prepareStatement(checkMembership)) {
+            checkMembershipSt.setInt(1, userId);
+            checkMembershipSt.setString(2, String.valueOf(groupId));
+            try (ResultSet rs = checkMembershipSt.executeQuery()) {
                 return rs.next();
             }
         } catch (SQLException e) {
@@ -353,36 +482,32 @@ public class DatabaseService {
         }
     }
 
-    private static final String createNewRequest = "insert into request " +
-            "(request_status, request_type, request_metadata, visible_user_list)" +
-            " values (?, ?, ?, ?)";
-    private static final String addNewRequestRecordToAccountTable = "update account " +
+    private static final String insertRequest = "insert into request " +
+            "(request_status, request_type, request_metadata) " +
+            "values (?, ?, ?)";
+    private static final String appendUserRequestList = "update account " +
             "set request_list = json_array_append(request_list, '$', ?) where user_id = ?";
     public static int newContactRequest(int userId, int newContactId) throws DataAccessException {
         try (Connection con = DriverManager.getConnection(url, user, password);
-             PreparedStatement createNewRequestSt = con.prepareStatement(createNewRequest);
-             PreparedStatement getLastInsertedSt = con.prepareStatement(getLastInserted);
-             PreparedStatement storeRequestToAccountTableSt = con.prepareStatement(addNewRequestRecordToAccountTable)) {
-            JsonObject metadata = new JsonObject(new HashMap<>());
+             PreparedStatement insertRequestSt = con.prepareStatement(insertRequest);
+             PreparedStatement queryLastInsertedSt = con.prepareStatement(queryLastInserted);
+             PreparedStatement appendUserRequestListSt = con.prepareStatement(appendUserRequestList)) {
+            JsonObject metadata = new JsonObject(new LinkedHashMap<>());
             metadata.put(RequestConstant.REQUEST_CONTACT_ADD_SENDER, new JsonObject(userId));
             metadata.put(RequestConstant.REQUEST_CONTACT_ADD_RECEIVER, new JsonObject(newContactId));
-            JsonObject visibleList = new JsonObject(new ArrayList<>());
-            visibleList.add(new JsonObject(userId));
-            visibleList.add(new JsonObject(newContactId));
-            createNewRequestSt.setString(1, EnumRequestStatus.REQUEST_STATUS_PENDING.toString());
-            createNewRequestSt.setString(2, RequestConstant.REQUEST_CONTACT_ADD);
-            createNewRequestSt.setString(3, metadata.toString());
-            createNewRequestSt.setString(4, visibleList.toString());
-            createNewRequestSt.executeUpdate();
-            try (ResultSet rs = getLastInsertedSt.executeQuery()) {
+            insertRequestSt.setString(1, EnumRequestStatus.REQUEST_STATUS_PENDING.toString());
+            insertRequestSt.setString(2, RequestConstant.REQUEST_CONTACT_ADD);
+            insertRequestSt.setString(3, metadata.toString());
+            insertRequestSt.executeUpdate();
+            try (ResultSet rs = queryLastInsertedSt.executeQuery()) {
                 if (rs.next()) {
                     int requestId = rs.getInt(1);
-                    storeRequestToAccountTableSt.setInt(1, requestId);
-                    storeRequestToAccountTableSt.setInt(2, userId);
-                    storeRequestToAccountTableSt.executeUpdate();
-                    storeRequestToAccountTableSt.setInt(1, requestId);
-                    storeRequestToAccountTableSt.setInt(2, newContactId);
-                    storeRequestToAccountTableSt.executeUpdate();
+                    appendUserRequestListSt.setInt(1, requestId);
+                    appendUserRequestListSt.setInt(2, userId);
+                    appendUserRequestListSt.executeUpdate();
+                    appendUserRequestListSt.setInt(1, requestId);
+                    appendUserRequestListSt.setInt(2, newContactId);
+                    appendUserRequestListSt.executeUpdate();
                     return requestId;
                 } else {
                     throw new DataAccessException("Unexpected Error - New Contact Request");
@@ -395,6 +520,18 @@ public class DatabaseService {
     }
 
     private static final String setRequestStatus = "update request set request_status = ? where request_id = ?";
+    public static void newContactRevoke(int requestId) throws DataAccessException {
+        try (Connection con = DriverManager.getConnection(url, user, password);
+             PreparedStatement setRequestStatusSt = con.prepareStatement(setRequestStatus)) {
+            setRequestStatusSt.setString(1, EnumRequestStatus.REQUEST_STATUS_REVOKED.toString());
+            setRequestStatusSt.setInt(2, requestId);
+            setRequestStatusSt.executeUpdate();
+        } catch (SQLException e) {
+            logger.info(e.getMessage());
+            throw new DataAccessException("MySQL Execution Failed newContactRevoke(int requestId)");
+        }
+    }
+
     public static void newContactConfirm(int requestId, int requesterId, int newContactId) throws DataAccessException {
         try (Connection con = DriverManager.getConnection(url, user, password);
              PreparedStatement setRequestStatusSt = con.prepareStatement(setRequestStatus)) {
@@ -422,30 +559,26 @@ public class DatabaseService {
 
     public static int newMemberRequest(int requester, int groupId, int groupHostId) throws DataAccessException {
         try (Connection con = DriverManager.getConnection(url, user, password);
-             PreparedStatement createNewRequestSt = con.prepareStatement(createNewRequest);
-             PreparedStatement getLastInsertedSt = con.prepareStatement(getLastInserted);
-             PreparedStatement storeRequestToAccountTableSt = con.prepareStatement(addNewRequestRecordToAccountTable)) {
-            JsonObject metadata = new JsonObject(new HashMap<>());
+             PreparedStatement insertRequestSt = con.prepareStatement(insertRequest);
+             PreparedStatement queryLastInsertedSt = con.prepareStatement(queryLastInserted);
+             PreparedStatement appendUserRequestListSt = con.prepareStatement(appendUserRequestList)) {
+            JsonObject metadata = new JsonObject(new LinkedHashMap<>());
             metadata.put(RequestConstant.REQUEST_GROUP_ADD_SENDER, new JsonObject(requester));
             metadata.put(RequestConstant.REQUEST_GROUP_ADD_RECEIVER, new JsonObject(groupHostId));
             metadata.put(RequestConstant.REQUEST_GROUP_ADD_GROUP_ID, new JsonObject(groupId));
-            JsonObject visibleList = new JsonObject(new ArrayList<>());
-            visibleList.add(new JsonObject(requester));
-            visibleList.add(new JsonObject(groupHostId));
-            createNewRequestSt.setString(1, EnumRequestStatus.REQUEST_STATUS_PENDING.toString());
-            createNewRequestSt.setString(2, RequestConstant.REQUEST_GROUP_ADD);
-            createNewRequestSt.setString(3, metadata.toString());
-            createNewRequestSt.setString(4, visibleList.toString());
-            createNewRequestSt.executeUpdate();
-            try (ResultSet rs = getLastInsertedSt.executeQuery()) {
+            insertRequestSt.setString(1, EnumRequestStatus.REQUEST_STATUS_PENDING.toString());
+            insertRequestSt.setString(2, RequestConstant.REQUEST_GROUP_ADD);
+            insertRequestSt.setString(3, metadata.toString());
+            insertRequestSt.executeUpdate();
+            try (ResultSet rs = queryLastInsertedSt.executeQuery()) {
                 if (rs.next()) {
                     int requestId = rs.getInt(1);
-                    storeRequestToAccountTableSt.setInt(1, requestId);
-                    storeRequestToAccountTableSt.setInt(2, requester);
-                    storeRequestToAccountTableSt.executeUpdate();
-                    storeRequestToAccountTableSt.setInt(1, requestId);
-                    storeRequestToAccountTableSt.setInt(2, groupHostId);
-                    storeRequestToAccountTableSt.executeUpdate();
+                    appendUserRequestListSt.setInt(1, requestId);
+                    appendUserRequestListSt.setInt(2, requester);
+                    appendUserRequestListSt.executeUpdate();
+                    appendUserRequestListSt.setInt(1, requestId);
+                    appendUserRequestListSt.setInt(2, groupHostId);
+                    appendUserRequestListSt.executeUpdate();
                     return requestId;
                 } else {
                     throw new DataAccessException("Unexpected Error - New Member Request");
@@ -454,6 +587,18 @@ public class DatabaseService {
         } catch (SQLException e) {
             logger.info(e.getMessage());
             throw new DataAccessException("MySQL Execution Failed newMemberRequest(int requester, int groupId, int groupHostId)");
+        }
+    }
+
+    public static void newMemberRevoke(int requestId) throws DataAccessException {
+        try (Connection con = DriverManager.getConnection(url, user, password);
+             PreparedStatement setRequestStatusSt = con.prepareStatement(setRequestStatus)) {
+            setRequestStatusSt.setString(1, EnumRequestStatus.REQUEST_STATUS_REVOKED.toString());
+            setRequestStatusSt.setInt(2, requestId);
+            setRequestStatusSt.executeUpdate();
+        } catch (SQLException e) {
+            logger.info(e.getMessage());
+            throw new DataAccessException("MySQL Execution Failed newMemberRevoke(int requestId)");
         }
     }
 
@@ -482,114 +627,119 @@ public class DatabaseService {
         }
     }
 
-    private static final String newContact = "update account " +
+    private static final String appendUserContactList = "update account " +
             "set contact_list = json_array_append(contact_list, '$', ?) where user_id = ?";
     public static void newContact(int requesterId, int newContactId) throws DataAccessException {
         try (Connection con = DriverManager.getConnection(url, user, password);
-             PreparedStatement newContactSt = con.prepareStatement(newContact)) {
-            newContactSt.setInt(1, requesterId);
-            newContactSt.setInt(2, newContactId);
-            newContactSt.executeUpdate();
-            newContactSt.setInt(1, newContactId);
-            newContactSt.setInt(2, requesterId);
-            newContactSt.executeUpdate();
+             PreparedStatement appendUserContactListSt = con.prepareStatement(appendUserContactList)) {
+            appendUserContactListSt.setInt(1, requesterId);
+            appendUserContactListSt.setInt(2, newContactId);
+            appendUserContactListSt.executeUpdate();
+            appendUserContactListSt.setInt(1, newContactId);
+            appendUserContactListSt.setInt(2, requesterId);
+            appendUserContactListSt.executeUpdate();
         } catch (SQLException e) {
             logger.info(e.getMessage());
             throw new DataAccessException("MySQL Execution Failed newContact(int requesterId, int newContactId)");
         }
     }
 
-    private static final String addGroup = "update account " +
+    private static final String appendUserGroupList = "update account " +
             "set group_list = json_array_append(group_list, '$', ?) where user_id = ?";
-    private static final String addMember = "update group_info " +
+    private static final String appendGroupMemberList = "update group_info " +
             "set member_list = json_array_append(member_list, '$', ?) where group_id = ?";
     public static void newMember(int groupId, int requesterId) throws DataAccessException {
         try (Connection con = DriverManager.getConnection(url, user, password);
-             PreparedStatement addGroupSt = con.prepareStatement(addGroup);
-             PreparedStatement addMemberSt = con.prepareStatement(addMember)) {
-            addGroupSt.setInt(1, groupId);
-            addGroupSt.setInt(2, requesterId);
-            addGroupSt.executeUpdate();
-            addMemberSt.setInt(1, requesterId);
-            addMemberSt.setInt(2, groupId);
-            addMemberSt.executeUpdate();
+             PreparedStatement appendUserGroupListSt = con.prepareStatement(appendUserGroupList);
+             PreparedStatement appendGroupMemberListSt = con.prepareStatement(appendGroupMemberList)) {
+            appendUserGroupListSt.setInt(1, groupId);
+            appendUserGroupListSt.setInt(2, requesterId);
+            appendUserGroupListSt.executeUpdate();
+            appendGroupMemberListSt.setInt(1, requesterId);
+            appendGroupMemberListSt.setInt(2, groupId);
+            appendGroupMemberListSt.executeUpdate();
         } catch (SQLException e) {
             logger.info(e.getMessage());
             throw new DataAccessException("MySQL Execution Failed newMember(int groupId, int requesterId)");
         }
     }
 
-    private static final String storeNewMessage = "insert into message (receiver_id, message_status, message_content) " +
-            "values (?, ?, ?)";
-    private static final String updateAccountNewMessage = "update account " +
+    private static final String insertMessage = "insert into message (receiver_id, message_type, message_status, message_content) " +
+            "values (?, ?, ?, ?)";
+    private static final String appendUserMessageList = "update account " +
             "set offline_message_list = json_array_append(offline_message_list, '$', ?) where user_id = ?";
-    public static void pushOfflineMessage(int userId, String content) throws DataAccessException {
+    public static void pushOfflineMessage(int userId, String content, EnumMessageType messageType) throws DataAccessException {
         try (Connection con = DriverManager.getConnection(url, user, password);
-             PreparedStatement storeNewMessageSt = con.prepareStatement(storeNewMessage);
-             PreparedStatement getLastInsertedSt = con.prepareStatement(getLastInserted);
-             PreparedStatement updateAccNewMessageSt = con.prepareStatement(updateAccountNewMessage)) {
-            storeNewMessageSt.setInt(1, userId);
-            storeNewMessageSt.setString(2, EnumMessageStatus.MESSAGE_STATUS_PENDING.toString());
-            storeNewMessageSt.setString(3, content);
-            storeNewMessageSt.executeUpdate();
-            try (ResultSet rs = getLastInsertedSt.executeQuery()) {
+             PreparedStatement insertMessageSt = con.prepareStatement(insertMessage);
+             PreparedStatement queryLastInsertedSt = con.prepareStatement(queryLastInserted);
+             PreparedStatement appendUserMessageListSt = con.prepareStatement(appendUserMessageList)) {
+            insertMessageSt.setInt(1, userId);
+            insertMessageSt.setString(2, messageType.toString());
+            insertMessageSt.setString(3, EnumMessageStatus.MESSAGE_STATUS_PENDING.toString());
+            insertMessageSt.setString(4, content);
+            insertMessageSt.executeUpdate();
+            try (ResultSet rs = queryLastInsertedSt.executeQuery()) {
                 if (rs.next()) {
                     int messageId = rs.getInt(1);
-                    updateAccNewMessageSt.setInt(1, messageId);
-                    updateAccNewMessageSt.setInt(2, userId);
-                    updateAccNewMessageSt.executeUpdate();
+                    appendUserMessageListSt.setInt(1, messageId);
+                    appendUserMessageListSt.setInt(2, userId);
+                    appendUserMessageListSt.executeUpdate();
                 } else {
                     throw new DataAccessException("Unexpected Error - Push New Offline Messages!");
                 }
             }
         } catch (SQLException e) {
             logger.info(e.getMessage());
-            throw new DataAccessException("MySQL Execution Failed pushOfflineMessage(int userId, String content)");
+            throw new DataAccessException("MySQL Execution Failed pushOfflineMessage(int userId, String content, EnumMessageType messageType)");
         }
     }
 
-    private static final String searchMessage = "select " +
-            "message_id, receiver_id, message_status, message_content from message where message_id = ?";
+    private static final String queryUserMessageList = "select offline_message_list from account where user_id = ?";
+    private static final String queryMessage = "select " +
+            "message_id, receiver_id, message_type, message_status, message_content from message where message_id = ?";
     private static final String setMessageStatus = "update message set message_status = ? where message_id = ?";
-    private static final String clearAccMessageList = "update account set offline_message_list = '[]' where user_id = ?";
+    private static final String clearUserMessageList = "update account set offline_message_list = '[]' where user_id = ?";
     public static List<JsonObject> popOfflineMessageAsList(int userId) throws DataAccessException {
         List<JsonObject> result = new ArrayList<>();
 
         try (Connection con = DriverManager.getConnection(url, user, password);
-             PreparedStatement searchAccSt = con.prepareStatement(searchUser);
-             PreparedStatement searchMessageSt = con.prepareStatement(searchMessage);
-             PreparedStatement updateMessageStateSt = con.prepareStatement(setMessageStatus);
-             PreparedStatement updateAccMessageListSt = con.prepareStatement(clearAccMessageList)) {
-            searchAccSt.setInt(1, userId);
-            try (ResultSet rs = searchAccSt.executeQuery()) {
+             PreparedStatement queryUserMessageListSt = con.prepareStatement(queryUserMessageList);
+             PreparedStatement queryMessageSt = con.prepareStatement(queryMessage);
+             PreparedStatement setMessageStatusSt = con.prepareStatement(setMessageStatus);
+             PreparedStatement clearUserMessageListSt = con.prepareStatement(clearUserMessageList)) {
+            queryUserMessageListSt.setInt(1, userId);
+            try (ResultSet rs = queryUserMessageListSt.executeQuery()) {
                 if (rs.next()) {
-                    List<Integer> messages = JsonObject.create(rs.getString(8)).getList()
+                    List<Integer> messages = JsonObject.create(rs.getString(1)).getList()
                             .stream().map(JsonObject::getInt).collect(Collectors.toList());
 
                     for (Integer i : messages) {
                         int textId = i;
-                        searchMessageSt.setInt(1, i);
-                        try (ResultSet mrs = searchMessageSt.executeQuery()) {
+                        queryMessageSt.setInt(1, i);
+                        try (ResultSet mrs = queryMessageSt.executeQuery()) {
                             if (mrs.next()) {
-                                result.add(JsonObject.create(mrs.getString(4)));
-                                updateMessageStateSt.setString(1, EnumMessageStatus.MESSAGE_STATUS_POPPED.toString());
-                                updateMessageStateSt.setInt(2, textId);
-                                updateMessageStateSt.executeUpdate();
+                                JsonObject messageWithType = new JsonObject(new LinkedHashMap<>());
+                                messageWithType.put("message_type", new JsonObject(mrs.getString(3)));
+                                messageWithType.put("content", JsonObject.create(mrs.getString(5)));
+                                result.add(messageWithType);
+                                setMessageStatusSt.setString(1, EnumMessageStatus.MESSAGE_STATUS_POPPED.toString());
+                                setMessageStatusSt.setInt(2, textId);
+                                setMessageStatusSt.executeUpdate();
                             } else {
                                 throw new DataAccessException("Unexpected Error - Pop Offline Messages!");
                             }
                         }
                     }
 
-                    updateAccMessageListSt.setInt(1, userId);
-                    updateAccMessageListSt.executeUpdate();
+                    clearUserMessageListSt.setInt(1, userId);
+                    clearUserMessageListSt.executeUpdate();
                 } else {
                     throw new DataAccessException("Unexpected Error - Pop Offline Messages!");
                 }
             }
         } catch (SQLException e) {
             logger.info(e.getMessage());
-            throw new DataAccessException("MySQL Execution Failed popOfflineMessage(int userId)");
+            throw new DataAccessException("MySQL Execution Failed popOfflineMessageAsList(int userId)");
         }
 
         return result;
@@ -610,28 +760,27 @@ public class DatabaseService {
     }
 
     private static final Duration PASSCODE_EXPIRE_DURATION = Duration.ofMinutes(10);
-    private static final String createPasscode = "insert into passcode " +
+    private static final String insertPasscode = "insert into passcode " +
             "(passcode, passcode_metadata, passcode_create_datetime, passcode_expire_datetime, passcode_status) " +
             "values (?, ?, ?, ?, ?)";
     public static String newPasscode(Map<String, String> kvMap) {
         try (Connection con = DriverManager.getConnection(url, user, password);
-            PreparedStatement createPasscodeSt = con.prepareStatement(createPasscode)) {
+            PreparedStatement insertPasscodeSt = con.prepareStatement(insertPasscode)) {
             String passcode = generateNewPasscode();
-            JsonObject metadata = new JsonObject(new HashMap<>());
+            JsonObject metadata = new JsonObject(new LinkedHashMap<>());
             kvMap.forEach((key, value) -> metadata.put(key, new JsonObject(value)));
-            createPasscodeSt.setString(1, passcode);
-            createPasscodeSt.setString(2, metadata.toString());
-            createPasscodeSt.setTimestamp(3, Timestamp.from(Instant.now()));
-            createPasscodeSt.setTimestamp(4, Timestamp.from(Instant.now().plus(PASSCODE_EXPIRE_DURATION)));
-            createPasscodeSt.setString(5, EnumPasscodeStatus.PASSCODE_STATUS_PENDING.toString());
-            createPasscodeSt.executeUpdate();
+            insertPasscodeSt.setString(1, passcode);
+            insertPasscodeSt.setString(2, metadata.toString());
+            insertPasscodeSt.setTimestamp(3, Timestamp.from(Instant.now()));
+            insertPasscodeSt.setTimestamp(4, Timestamp.from(Instant.now().plus(PASSCODE_EXPIRE_DURATION)));
+            insertPasscodeSt.setString(5, EnumPasscodeStatus.PASSCODE_STATUS_PENDING.toString());
+            insertPasscodeSt.executeUpdate();
             return passcode;
         } catch (SQLException e) {
             logger.info(e.getMessage());
-            throw new DataAccessException("MySQL Execution Failed createPasscode(Map<String, String> kvMap)");
+            throw new DataAccessException("MySQL Execution Failed newPasscode(Map<String, String> kvMap)");
         }
     }
-
 
     private static final String setPasscodeStatus = "update passcode set passcode_status = ? where passcode = ?";
     private static void setPasscodeStatus(String passcode, String newStatus) {
@@ -646,15 +795,15 @@ public class DatabaseService {
         }
     }
 
-    private static final String searchPasscode = "select " +
+    private static final String queryPasscode = "select " +
             "passcode_metadata, passcode_create_datetime, passcode_expire_datetime, passcode_status " +
             "from passcode where passcode = ?";
     @SuppressWarnings("unused")
     public static void checkPasscode(String passcode, Map<String, String> kvMap) throws PasscodeException {
         try (Connection con = DriverManager.getConnection(url, user, password);
-             PreparedStatement searchPasscodeSt = con.prepareStatement(searchPasscode)) {
-            searchPasscodeSt.setString(1, passcode);
-            try (ResultSet rs = searchPasscodeSt.executeQuery()) {
+             PreparedStatement queryPasscodeSt = con.prepareStatement(queryPasscode)) {
+            queryPasscodeSt.setString(1, passcode);
+            try (ResultSet rs = queryPasscodeSt.executeQuery()) {
                 if (rs.next()) {
                     String metadataRaw = rs.getString(1);
                     Instant passcodeCreateTime = rs.getTimestamp(2).toInstant();
@@ -687,57 +836,57 @@ public class DatabaseService {
     }
 
     private static final Duration SESSION_EXPIRE_DURATION = Duration.ofDays(30);
-    private static final String createSession = "insert into session_storage " +
+    private static final String queryUserLastSession = "select last_session from account where user_id = ?";
+    private static final String insertSession = "insert into session_storage " +
             "(session_id, user_id, session_create_datetime, session_expire_datetime, session_status) " +
             "values (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE " +
             "session_id = ?, user_id = ?, session_create_datetime =?, session_expire_datetime = ?, session_status = ?";
-    private static final String updateLastSession = "update account set last_session = ? where user_id = ?";
+    private static final String updateUserLastSession = "update account set last_session = ? where user_id = ?";
     public static void updateSession(int userId, String session) {
         try (Connection con = DriverManager.getConnection(url, user, password);
-             PreparedStatement searchLastSessionSt = con.prepareStatement(findLastSession);
-             PreparedStatement revokePreviousSt = con.prepareStatement(setSessionStatus);
-             PreparedStatement createSessionSt = con.prepareStatement(createSession);
-             PreparedStatement updatePreviousSessionSt = con.prepareStatement(updateLastSession)) {
-            searchLastSessionSt.setInt(1, userId);
-            try (ResultSet rs = searchLastSessionSt.executeQuery()) {
+             PreparedStatement queryUserLastSessionSt = con.prepareStatement(queryUserLastSession);
+             PreparedStatement revokePreviousSessionSt = con.prepareStatement(setSessionStatus);
+             PreparedStatement insertSessionSt = con.prepareStatement(insertSession);
+             PreparedStatement updateUserLastSessionSt = con.prepareStatement(updateUserLastSession)) {
+            queryUserLastSessionSt.setInt(1, userId);
+            try (ResultSet rs = queryUserLastSessionSt.executeQuery()) {
                 if (rs.next()) {
                     String lastSession = rs.getString(1);
                     if (lastSession != null) {
-                        revokePreviousSt.setString(1, EnumSessionStatus.SESSION_STATUS_REVOKED.toString());
-                        revokePreviousSt.setString(2, lastSession);
-                        revokePreviousSt.executeUpdate();
+                        revokePreviousSessionSt.setString(1, EnumSessionStatus.SESSION_STATUS_REVOKED.toString());
+                        revokePreviousSessionSt.setString(2, lastSession);
+                        revokePreviousSessionSt.executeUpdate();
                     }
-                    createSessionSt.setString(1, session);
-                    createSessionSt.setString(6, session);
-                    createSessionSt.setInt(2, userId);
-                    createSessionSt.setInt(7, userId);
-                    createSessionSt.setTimestamp(3, Timestamp.from(Instant.now()));
-                    createSessionSt.setTimestamp(8, Timestamp.from(Instant.now()));
-                    createSessionSt.setTimestamp(4, Timestamp.from(Instant.now().plus(SESSION_EXPIRE_DURATION)));
-                    createSessionSt.setTimestamp(9, Timestamp.from(Instant.now().plus(SESSION_EXPIRE_DURATION)));
-                    createSessionSt.setString(5, EnumSessionStatus.SESSION_STATUS_VALID.toString());
-                    createSessionSt.setString(10, EnumSessionStatus.SESSION_STATUS_VALID.toString());
-                    createSessionSt.executeUpdate();
-                    updatePreviousSessionSt.setString(1, session);
-                    updatePreviousSessionSt.setInt(2, userId);
-                    updatePreviousSessionSt.executeUpdate();
+                    insertSessionSt.setString(1, session);
+                    insertSessionSt.setString(6, session);
+                    insertSessionSt.setInt(2, userId);
+                    insertSessionSt.setInt(7, userId);
+                    insertSessionSt.setTimestamp(3, Timestamp.from(Instant.now()));
+                    insertSessionSt.setTimestamp(8, Timestamp.from(Instant.now()));
+                    insertSessionSt.setTimestamp(4, Timestamp.from(Instant.now().plus(SESSION_EXPIRE_DURATION)));
+                    insertSessionSt.setTimestamp(9, Timestamp.from(Instant.now().plus(SESSION_EXPIRE_DURATION)));
+                    insertSessionSt.setString(5, EnumSessionStatus.SESSION_STATUS_VALID.toString());
+                    insertSessionSt.setString(10, EnumSessionStatus.SESSION_STATUS_VALID.toString());
+                    insertSessionSt.executeUpdate();
+                    updateUserLastSessionSt.setString(1, session);
+                    updateUserLastSessionSt.setInt(2, userId);
+                    updateUserLastSessionSt.executeUpdate();
                 } else {
                     throw new DataAccessException("Unexpected Error - Revoke Last Session!");
                 }
             }
         } catch (SQLException e) {
             logger.info(e.getMessage());
-            throw new DataAccessException("MySQL Execution Failed createSession(int userId, String session)");
+            throw new DataAccessException("MySQL Execution Failed updateSession(int userId, String session)");
         }
     }
 
     // Currently do not check expiration.
-    private static final String searchUserLastSession = "select last_session from account where user_id = ?";
     public static boolean checkSession(int userId, String sessionToken) {
         try (Connection con = DriverManager.getConnection(url, user, password);
-             PreparedStatement searchUserLastSessionSt = con.prepareStatement(searchUserLastSession)) {
-            searchUserLastSessionSt.setInt(1, userId);
-            try (ResultSet rs = searchUserLastSessionSt.executeQuery()) {
+             PreparedStatement queryUserLastSessionSt = con.prepareStatement(queryUserLastSession)) {
+            queryUserLastSessionSt.setInt(1, userId);
+            try (ResultSet rs = queryUserLastSessionSt.executeQuery()) {
                 if (rs.next()) {
                     String lastSession = rs.getString(1);
                     return lastSession.equals(sessionToken);
@@ -751,32 +900,11 @@ public class DatabaseService {
         }
     }
 
-    private static final String searchUserLogRecord = "select last_login, last_logout from account where user_id = ?";
-    public static boolean isOnline(int userId) {
-        try (Connection con = DriverManager.getConnection(url, user, password);
-             PreparedStatement searchUserLogRecordSt = con.prepareStatement(searchUserLogRecord)) {
-            searchUserLogRecordSt.setInt(1, userId);
-            try (ResultSet rs = searchUserLogRecordSt.executeQuery()) {
-                if (rs.next()) {
-                    Instant lastLogin = rs.getTimestamp(1).toInstant();
-                    Instant lastLogout = rs.getTimestamp(2).toInstant();
-                    return lastLogout.plus(Duration.ofMillis(1)).isBefore(lastLogin);
-                } else {
-                    throw new DataAccessException("Unexpected Error - Check If Online!");
-                }
-            }
-        } catch (SQLException e) {
-            logger.info(e.getMessage());
-            throw new DataAccessException("MySQL Execution Failed isOnline(int userId)");
-        }
-    }
-
-    private static final String findLastSession = "select last_session from account where user_id = ?";
     public static String queryLastSessionById(int userId) {
         try (Connection con = DriverManager.getConnection(url, user, password);
-             PreparedStatement findLastSessionSt = con.prepareStatement(findLastSession)) {
-            findLastSessionSt.setInt(1, userId);
-            try (ResultSet rs = findLastSessionSt.executeQuery()) {
+             PreparedStatement queryUserLastSessionSt = con.prepareStatement(queryUserLastSession)) {
+            queryUserLastSessionSt.setInt(1, userId);
+            try (ResultSet rs = queryUserLastSessionSt.executeQuery()) {
                 if (rs.next()) {
                     return rs.getString(1);
                 } else {
@@ -785,7 +913,60 @@ public class DatabaseService {
             }
         } catch (SQLException e) {
             logger.info(e.getMessage());
-            throw new DataAccessException("MySQL Execution Failed findLastSessionByUserId(int userId)");
+            throw new DataAccessException("MySQL Execution Failed queryLastSessionById(int userId)");
+        }
+    }
+
+    private static final Duration FILE_EXPIRE_DURATION = Duration.ofDays(365);
+    private static final String insertFileArchive = "insert into file_archive " +
+            "(first_selector, second_selector, file_name, file_link, file_uploader, file_upload_time, file_expire_time, file_size) " +
+            "values (?, ?, ?, ?, ?, ?, ?, ?)";
+    public static void newFileDescriptor(int firstSelector, int secondSelector, String fileName, String fileLink, int fileUploader, int fileSize) {
+        try (Connection con = DriverManager.getConnection(url, user, password);
+             PreparedStatement insertFileArchiveSt = con.prepareStatement(insertFileArchive)) {
+            insertFileArchiveSt.setInt(1, firstSelector);
+            insertFileArchiveSt.setInt(2, secondSelector);
+            insertFileArchiveSt.setString(3, fileName);
+            insertFileArchiveSt.setString(4, fileLink);
+            insertFileArchiveSt.setInt(5, fileUploader);
+            insertFileArchiveSt.setTimestamp(6, Timestamp.from(Instant.now()));
+            insertFileArchiveSt.setTimestamp(7, Timestamp.from(Instant.now().plus(FILE_EXPIRE_DURATION)));
+            insertFileArchiveSt.setInt(8, fileSize);
+            insertFileArchiveSt.executeUpdate();
+        } catch (SQLException e) {
+            logger.info(e.getMessage());
+            throw new DataAccessException("MySQL Execution Failed newFileDescriptor(int firstSelector, int secondSelector, String fileName, String fileLink, int fileUploader, int fileSize)");
+        }
+    }
+
+    private static final String queryFileList = "select " +
+            "file_id, first_selector, second_selector, file_name, file_link, file_uploader, file_upload_time, file_expire_time, file_size, file_downloads " +
+            "from file_archive where first_selector = ? and second_selector = ?";
+    public static List<FileInfo> getFileList(int firstSelector, int secondSelector) {
+        try (Connection con = DriverManager.getConnection(url, user, password);
+             PreparedStatement queryFileListSt = con.prepareStatement(queryFileList)) {
+            queryFileListSt.setInt(1, firstSelector);
+            queryFileListSt.setInt(2, secondSelector);
+            try (ResultSet rs = queryFileListSt.executeQuery()) {
+                List<FileInfo> result = new ArrayList<>();
+                while (rs.next()) {
+                    result.add(FileInfo.builder()
+                            .fileId(rs.getInt(1))
+                            .firstSelector(rs.getInt(2))
+                            .secondSelector(rs.getInt(3))
+                            .fileName(rs.getString(4))
+                            .fileLink(rs.getString(5))
+                            .fileUploader(rs.getInt(6))
+                            .fileUploadTime(rs.getTimestamp(7).toInstant())
+                            .fileExpireTime(rs.getTimestamp(8).toInstant())
+                            .fileSize(rs.getInt(9))
+                            .fileDownloads(rs.getInt(10)).build());
+                }
+                return result;
+            }
+        } catch (SQLException e) {
+            logger.info(e.getMessage());
+            throw new DataAccessException("MySQL Execution Failed getFileList(int firstSelector, int secondSelector)");
         }
     }
 
@@ -798,6 +979,7 @@ public class DatabaseService {
     private static final String deletePasscode = "delete from passcode";
     private static final String deleteRequest = "delete from request";
     private static final String deleteSession = "delete from session_storage";
+    private static final String deleteFileArchive = "delete from file_archive";
     public static void reset() {
         try (Connection con = DriverManager.getConnection(url, user, password);
             Statement deleteSt = con.createStatement()) {
@@ -809,6 +991,7 @@ public class DatabaseService {
             deleteSt.executeUpdate(deletePasscode);
             deleteSt.executeUpdate(deleteRequest);
             deleteSt.executeUpdate(deleteSession);
+            deleteSt.executeUpdate(deleteFileArchive);
         } catch (SQLException e) {
             logger.info(e.getMessage());
             throw new DataAccessException("MySQL Execution Failed resetDatabase()");

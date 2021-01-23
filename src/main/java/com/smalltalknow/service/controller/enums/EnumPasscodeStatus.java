@@ -5,7 +5,7 @@ public enum EnumPasscodeStatus {
     PASSCODE_STATUS_EXPIRED("passcode_expired"),
     PASSCODE_STATUS_REVOKED("passcode_revoked");
 
-    private String token;
+    private final String token;
 
     EnumPasscodeStatus(String token) { this.token = token; }
 
